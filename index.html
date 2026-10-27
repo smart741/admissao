@@ -115,7 +115,7 @@
     fotos: {}, subindo: {}, falhaFoto: {},
     geoEstado: 'idle', geoMsg: '',
     d: {
-      nome: '', nascimento: '', pis: '', semPis: false, cpf: '', rg: '', titulo: '', semTitulo: false,
+      nome: '', nascimento: '', pis: '', cpf: '', rg: '', titulo: '',
       sexo: '', estadoCivil: '', cep: '', numero: '', rua: '', bairro: '', cidade: '',
       celular: '', temWhats: true, email: '', temFilhos: '', filhos: [],
       aceite: false, declaro: false, geo: null
@@ -203,7 +203,7 @@
       { k: 'rg_frente', t: 'RG (frente)' },
       { k: 'rg_verso', t: 'RG (verso)' }
     ];
-    if (!S.d.semTitulo) { l.push({ k: 'titulo', t: 'Título de eleitor' }); }
+    l.push({ k: 'titulo', t: 'Título de eleitor' });
     if (S.d.sexo === 'Masculino') { l.push({ k: 'reservista', t: 'Certificado de reservista' }); }
     l.push({ k: 'escolaridade', t: 'Comprovante de escolaridade', dica: 'Diploma, histórico ou declaração da escola', pdf: true });
     if (casado()) { l.push({ k: 'certidao_casamento', t: 'Certidão de casamento', dica: 'Pedida porque você é casado(a) ou vive em união estável', pdf: true }); }
@@ -371,14 +371,12 @@
       campo('Nome completo', 'nome', d.nome, { auto: 'name' }) +
       '<div class="grade">' +
       campo('Data de nascimento', 'nascimento', d.nascimento, { tipo: 'date', max: hojeISO() }) +
-      campo('Número do PIS', 'pis', d.pis, { modo: 'numeric', mascara: 'pis', desabilitado: d.semPis, placeholder: d.semPis ? 'Não tenho' : '' }) +
+      campo('Número do PIS', 'pis', d.pis, { modo: 'numeric', mascara: 'pis' }) +
       campo('CPF', 'cpf', d.cpf, { modo: 'numeric', mascara: 'cpf' }) +
       campo('RG', 'rg', d.rg) +
-      campo('Título de eleitor', 'titulo', d.titulo, { modo: 'numeric', mascara: 'titulo', desabilitado: d.semTitulo, placeholder: d.semTitulo ? 'Não tenho' : '' }) +
+      campo('Título de eleitor', 'titulo', d.titulo, { modo: 'numeric', mascara: 'titulo' }) +
       '<label class="campo">Estado civil<select data-f="estadoCivil"><option value=""' + (d.estadoCivil ? '' : ' selected') + ' disabled>Selecione</option>' +
       ['Solteiro(a)', 'Casado(a)', 'União estável', 'Divorciado(a)', 'Viúvo(a)'].map(function (o) { return '<option' + (d.estadoCivil === o ? ' selected' : '') + '>' + o + '</option>'; }).join('') + '</select></label></div>' +
-      '<label class="check"><input type="checkbox" data-f="semPis"' + (d.semPis ? ' checked' : '') + '><span>Ainda não tenho o número do PIS</span></label>' +
-      '<label class="check"><input type="checkbox" data-f="semTitulo"' + (d.semTitulo ? ' checked' : '') + '><span>Não tenho título de eleitor</span></label>' +
       '<div><div class="rot">Sexo</div>' + seg('sexo', d.sexo, [['Feminino', 'Feminino'], ['Masculino', 'Masculino']]) + '</div>' +
       caixaErros() +
       '<div class="rodape"><button class="btn" data-acao="proximo">Continuar</button><p class="muted centro">Seu progresso fica salvo neste celular.</p></div>';
@@ -499,10 +497,10 @@
       var idade = idadeDe(d.nascimento);
       if (String(d.nome).trim().length < 3) { e.push('Digite o seu nome completo.'); }
       if (idade === null || idade < 14 || idade > 100) { e.push('Confira a data de nascimento.'); }
-      if (!d.semPis && !pisValido(d.pis)) { e.push('Confira o número do PIS (ou marque que ainda não tem).'); }
+      if (!pisValido(d.pis)) { e.push('Confira o número do PIS.'); }
       if (!cpfValido(d.cpf)) { e.push('Confira o número do CPF.'); }
       if (String(d.rg).trim().length < 5) { e.push('Digite o número do RG.'); }
-      if (!d.semTitulo && dig(d.titulo).length < 8) { e.push('Confira o número do título de eleitor (ou marque que não tem).'); }
+      if (dig(d.titulo).length < 8) { e.push('Confira o número do título de eleitor.'); }
       if (!d.estadoCivil) { e.push('Escolha o estado civil.'); }
       if (!d.sexo) { e.push('Escolha o sexo.'); }
     } else if (etapa === 2) {
@@ -591,7 +589,7 @@
     var d = S.d;
     var dados = {
       nome: d.nome, nascimento: d.nascimento, sexo: d.sexo, estadoCivil: d.estadoCivil,
-      pis: d.pis, semPis: d.semPis, cpf: d.cpf, rg: d.rg, titulo: d.titulo, semTitulo: d.semTitulo,
+      pis: d.pis, cpf: d.cpf, rg: d.rg, titulo: d.titulo,
       cep: d.cep, rua: d.rua, numero: d.numero, bairro: d.bairro, cidade: d.cidade,
       celular: d.celular, temWhats: d.temWhats, email: d.email,
       filhos: d.temFilhos === true ? d.filhos.map(function (f) { return { nome: f.nome, nascimento: f.nascimento, cpf: f.cpf }; }) : [],
@@ -629,8 +627,6 @@
     if (!f) { return; }
     if (t.type === 'checkbox') {
       S.d[f] = t.checked;
-      if (f === 'semPis' && t.checked) { S.d.pis = ''; }
-      if (f === 'semTitulo' && t.checked) { S.d.titulo = ''; }
       salvar(); render(true);
     } else if (t.tagName === 'SELECT') {
       S.d[f] = t.value; salvar();
