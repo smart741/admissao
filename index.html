@@ -84,6 +84,8 @@
   .circulo.feito { background: var(--ok-bg); color: var(--ok-ink); }
   .circulo.neutro { background: #EAEEF5; color: var(--muted); }
   .circulo img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+  .pad { display: block; width: 100%; height: 180px; background: #fff; border: 1.5px dashed var(--field); border-radius: 12px; touch-action: none; }
+  .termo { font-size: 14px; color: var(--ink2); line-height: 1.5; }
   .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 </style>
 </head>
@@ -100,6 +102,8 @@
   var VERSAO_TEXTO = 'v1';
   var TEXTO_PRIVACIDADE = 'Seus dados e fotos ficam guardados com segurança, e só o RH da empresa pode vê-los. [Texto de privacidade a definir com o jurídico]';
   var FINALIDADE_CONFIRMACAO = '[finalidade a definir com o RH e o jurídico]';
+  var TEXTO_TERMO = '[Texto do termo a definir com o jurídico. Exemplo: declaro que as informações e os documentos que enviei são verdadeiros e autorizo o uso dos meus dados para a minha admissão.]';
+  var VERSAO_TERMO = 'v1';
   var LOCALIZACAO_OBRIGATORIA = true;
   var USAR_VIACEP = true;          // preenche rua, bairro e cidade pelo CEP (serviço público ViaCEP)
   var MAX_LADO = 1600;             // lado maior da foto, em pixels
@@ -237,7 +241,7 @@
       var bruto = localStorage.getItem('admissao:' + S.token);
       if (!bruto) { return; }
       var r = JSON.parse(bruto);
-      if (r && r.d) { for (var k in S.d) { if (r.d[k] !== undefined) { S.d[k] = r.d[k]; } } S.etapa = Math.min(Math.max(r.etapa | 0, 0), 5); }
+      if (r && r.d) { for (var k in S.d) { if (r.d[k] !== undefined) { S.d[k] = r.d[k]; } } S.etapa = Math.min(Math.max(r.etapa | 0, 0), 6); }
     } catch (e) { /* rascunho corrompido: ignora */ }
   }
   function limparRascunho() { try { localStorage.removeItem('admissao:' + S.token); } catch (e) { /* ok */ } }
@@ -346,9 +350,9 @@
   }
   function topo(n) {
     var barras = '';
-    for (var i = 1; i <= 6; i++) { barras += '<i class="' + (i <= n ? 'on' : '') + '"></i>'; }
-    return '<div class="topo"><button class="voltar" data-acao="voltar" aria-label="Voltar">' + IC.voltar + '</button><span class="etapa">Etapa ' + n + ' de 6</span></div>' +
-      '<div class="progresso" role="img" aria-label="Progresso: etapa ' + n + ' de 6">' + barras + '</div>';
+    for (var i = 1; i <= 7; i++) { barras += '<i class="' + (i <= n ? 'on' : '') + '"></i>'; }
+    return '<div class="topo"><button class="voltar" data-acao="voltar" aria-label="Voltar">' + IC.voltar + '</button><span class="etapa">Etapa ' + n + ' de 7</span></div>' +
+      '<div class="progresso" role="img" aria-label="Progresso: etapa ' + n + ' de 7">' + barras + '</div>';
   }
 
   // ---------- telas ----------
@@ -442,14 +446,84 @@
     var geoLinha = '<div class="doc"><div class="mini ' + (e === 'ok' ? 'feito' : 'pend') + '">' + (e === 'ok' ? IC.ok : IC.pino) + '</div>' +
       '<div class="txt"><span class="tit">Sua localização</span>' + geoTxt + '<span class="dica">O celular vai pedir a sua permissão.</span></div>' +
       '<button class="cam' + (e === 'ok' ? ' sec' : '') + '" data-acao="geo" aria-label="' + (e === 'ok' ? 'Atualizar a localização' : 'Permitir o uso da localização') + '"' + (e === 'pedindo' ? ' disabled' : '') + '>' + IC.pino.replace(/width="32" height="32"/, 'width="22" height="22"') + '</button></div>';
-    var pronto = enviado('selfie') && (!LOCALIZACAO_OBRIGATORIA || e === 'ok') && d.declaro && !S.enviando && !Object.keys(S.subindo).length;
-    return topo(6) + '<div><h1>Confirme que é você</h1><p class="muted">Para finalizar, precisamos de uma selfie e da sua localização.</p></div>' +
+    var pronto = enviado('selfie') && (!LOCALIZACAO_OBRIGATORIA || e === 'ok') && !Object.keys(S.subindo).length;
+    return topo(6) + '<div><h1>Confirme que é você</h1><p class="muted">Precisamos de uma selfie e da sua localização.</p></div>' +
       selfie + geoLinha +
       '<div class="aviso">' + IC.cadeado + '<p>A selfie e a localização servem para ' + esc(FINALIDADE_CONFIRMACAO) + '. Só o RH vê essas informações.</p></div>' +
-      '<label class="check"><input type="checkbox" data-f="declaro"' + (d.declaro ? ' checked' : '') + '><span>Declaro que os dados e os documentos que enviei são verdadeiros.</span></label>' +
       caixaErros() +
-      '<div class="rodape"><button class="btn" data-acao="enviar"' + (pronto ? '' : ' disabled') + '>' + (S.enviando ? 'Enviando…' : 'Enviar para o RH') + '</button>' +
+      '<div class="rodape"><button class="btn" data-acao="proximo"' + (pronto ? '' : ' disabled') + '>Continuar</button>' +
       '<p class="muted centro">' + (LOCALIZACAO_OBRIGATORIA ? 'Não conseguiu permitir a localização? Avise o RH.' : 'A localização é opcional.') + '</p></div>';
+  }
+
+  function viewAssinatura() {
+    var d = S.d, hoje = new Date().toLocaleDateString('pt-BR');
+    var dica = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);pointer-events:none;' + (tracos.length ? 'display:none;' : '');
+    return topo(7) + '<div><h1>Assinatura</h1><p class="muted">Leia o termo e assine com o dedo no quadro abaixo.</p></div>' +
+      '<div class="cartao"><p class="termo"><strong>' + esc(d.nome) + '</strong> · CPF ' + esc(d.cpf) + ' · ' + esc(hoje) + '</p><p class="termo">' + esc(TEXTO_TERMO) + '</p></div>' +
+      '<label class="check"><input type="checkbox" data-f="declaro"' + (d.declaro ? ' checked' : '') + '><span>Li o termo acima e declaro que as informações e os documentos que enviei são verdadeiros.</span></label>' +
+      '<div><div class="rot">Sua assinatura</div><div style="position:relative"><canvas id="pad" class="pad" role="img" aria-label="Quadro para assinar com o dedo"></canvas>' +
+      '<span id="dica-pad" style="' + dica + '">Assine aqui</span></div>' +
+      '<button class="remover" style="color:var(--ink)" data-acao="limpar">Limpar assinatura</button></div>' +
+      caixaErros() +
+      '<div class="rodape"><button class="btn" data-acao="enviar"' + (S.enviando ? ' disabled' : '') + '>' + (S.enviando ? 'Enviando…' : 'Enviar para o RH') + '</button></div>';
+  }
+
+  // ---------- quadro de assinatura ----------
+  var tracos = [];            // cada traço é uma lista de pontos [x, y], de 0 a 1 (independe do tamanho da tela)
+  var proporcaoPad = 0.4;
+  function totalPontos() { return tracos.reduce(function (a, t) { return a + t.length; }, 0); }
+  function desenharTracos(ctx, w, h) {
+    ctx.lineWidth = Math.max(2, w / 170); ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#0F1B2D';
+    tracos.forEach(function (t) {
+      if (!t.length) { return; }
+      ctx.beginPath(); ctx.moveTo(t[0][0] * w, t[0][1] * h);
+      if (t.length === 1) { ctx.lineTo(t[0][0] * w + 0.1, t[0][1] * h); }
+      for (var i = 1; i < t.length; i++) { ctx.lineTo(t[i][0] * w, t[i][1] * h); }
+      ctx.stroke();
+    });
+  }
+  function iniciarPad() {
+    var c = document.getElementById('pad');
+    if (!c) { return; }
+    var r = c.getBoundingClientRect(), w = r.width || 300, h = r.height || 180, ratio = window.devicePixelRatio || 1;
+    proporcaoPad = h / w;
+    c.width = Math.round(w * ratio); c.height = Math.round(h * ratio);
+    var ctx = c.getContext('2d');
+    ctx.scale(ratio, ratio);
+    desenharTracos(ctx, w, h);
+    var atual = null, ultimo = null;
+    function ponto(ev) {
+      var b = c.getBoundingClientRect(), bw = b.width || w, bh = b.height || h;
+      return [Math.min(1, Math.max(0, (ev.clientX - b.left) / bw)), Math.min(1, Math.max(0, (ev.clientY - b.top) / bh))];
+    }
+    c.addEventListener('pointerdown', function (ev) {
+      ev.preventDefault();
+      if (c.setPointerCapture && ev.pointerId !== undefined) { try { c.setPointerCapture(ev.pointerId); } catch (e) { /* ok */ } }
+      var p = ponto(ev); atual = [p]; ultimo = p; tracos.push(atual);
+      var dica = document.getElementById('dica-pad'); if (dica) { dica.style.display = 'none'; }
+      ctx.lineWidth = Math.max(2, w / 170); ctx.lineCap = 'round'; ctx.strokeStyle = '#0F1B2D';
+      ctx.beginPath(); ctx.moveTo(p[0] * w, p[1] * h); ctx.lineTo(p[0] * w + 0.1, p[1] * h); ctx.stroke();
+    });
+    c.addEventListener('pointermove', function (ev) {
+      if (!atual) { return; }
+      ev.preventDefault();
+      var p = ponto(ev);
+      atual.push(p);
+      ctx.beginPath(); ctx.moveTo(ultimo[0] * w, ultimo[1] * h); ctx.lineTo(p[0] * w, p[1] * h); ctx.stroke();
+      ultimo = p;
+    });
+    function fim() { atual = null; ultimo = null; }
+    c.addEventListener('pointerup', fim); c.addEventListener('pointercancel', fim); c.addEventListener('pointerleave', fim);
+  }
+  function exportarAssinatura() {
+    return new Promise(function (resolve, reject) {
+      var W = 800, H = Math.round(W * proporcaoPad), c = document.createElement('canvas');
+      c.width = W; c.height = H;
+      var ctx = c.getContext('2d');
+      ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, W, H);
+      desenharTracos(ctx, W, H);
+      c.toBlob(function (b) { b ? resolve(b) : reject(new Error('imagem')); }, 'image/png');
+    });
   }
 
   function viewFinal() {
@@ -481,9 +555,10 @@
     if (S.tela === 'carregando') { html = '<div class="centro" style="margin:auto"><p class="muted">Abrindo o formulário…</p></div>'; }
     else if (S.tela === 'erro') { html = viewErro(); }
     else if (S.tela === 'final') { html = viewFinal(); }
-    else { html = [viewBoasVindas, viewDados, viewEndereco, viewFotos, viewFilhos, viewConfirmacao][S.etapa](); }
+    else { html = [viewBoasVindas, viewDados, viewEndereco, viewFotos, viewFilhos, viewConfirmacao, viewAssinatura][S.etapa](); }
     var foco = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.f : null;
     app.innerHTML = html;
+    if (S.tela === 'form' && S.etapa === 6) { iniciarPad(); }
     if (!manter) { window.scrollTo(0, 0); }
     if (foco && !manter) { var el = app.querySelector('[data-f="' + foco + '"]'); if (el && el.focus) { el.focus(); } }
   }
@@ -537,7 +612,9 @@
     } else if (etapa === 5) {
       if (!enviado('selfie')) { e.push('Tire a selfie.'); }
       if (LOCALIZACAO_OBRIGATORIA && S.geoEstado !== 'ok') { e.push('Permita o uso da localização.'); }
-      if (!d.declaro) { e.push('Marque a declaração.'); }
+    } else if (etapa === 6) {
+      if (!d.declaro) { e.push('Marque que você leu o termo e concorda.'); }
+      if (totalPontos() < 15) { e.push('Faça a sua assinatura no quadro.'); }
     }
     return e;
   }
@@ -583,7 +660,7 @@
 
   // ---------- envio final ----------
   function enviarTudo() {
-    var e = validar(5);
+    var e = validar(6);
     if (e.length) { S.erros = e; render(true); return; }
     S.enviando = true; S.erros = []; render(true);
     var d = S.d;
@@ -593,15 +670,26 @@
       cep: d.cep, rua: d.rua, numero: d.numero, bairro: d.bairro, cidade: d.cidade,
       celular: d.celular, temWhats: d.temWhats, email: d.email,
       filhos: d.temFilhos === true ? d.filhos.map(function (f) { return { nome: f.nome, nascimento: f.nascimento, cpf: f.cpf }; }) : [],
-      aceite: d.aceite, versaoTexto: VERSAO_TEXTO, declaro: d.declaro, geo: d.geo
+      aceite: d.aceite, versaoTexto: VERSAO_TEXTO, declaro: d.declaro, geo: d.geo,
+      assinou: true, versaoTermo: VERSAO_TERMO
     };
-    chamar('enviar', { dados: dados }).then(function (r) {
+    exportarAssinatura()
+      .then(paraBase64)
+      .then(function (b64) { return chamar('arquivo', { chave: 'assinatura', mime: 'image/png', dados: b64 }); })
+      .then(function (up) {
+        if (!up || !up.ok) { var er = new Error('assinatura'); er.codigo = up && up.erro; throw er; }
+        return chamar('enviar', { dados: dados });
+      })
+      .then(function (r) {
       S.enviando = false;
       if (r && r.ok) { S.faltam = r.faltam || []; S.tela = 'final'; limparRascunho(); render(); }
       else if (r && (r.erro === 'usado' || r.erro === 'vencido' || r.erro === 'invalido')) { S.tela = 'erro'; S.erroTela = r.erro; render(); }
       else { S.erros = ['Não foi possível enviar agora. Tente de novo.']; render(true); }
-    }).catch(function () {
-      S.enviando = false; S.erros = ['Sem conexão. Verifique a internet e toque em enviar de novo.']; render(true);
+    }).catch(function (err) {
+      S.enviando = false;
+      if (err && (err.codigo === 'usado' || err.codigo === 'vencido' || err.codigo === 'invalido')) { S.tela = 'erro'; S.erroTela = err.codigo; render(); return; }
+      S.erros = [err && err.message === 'assinatura' ? 'Não foi possível enviar a assinatura. Tente de novo.' : 'Sem conexão. Verifique a internet e toque em enviar de novo.'];
+      render(true);
     });
   }
 
@@ -660,6 +748,7 @@
       salvar(); render(true);
     }
     else if (a === 'geo') { pedirLocalizacao(); }
+    else if (a === 'limpar') { tracos.length = 0; S.erros = []; render(true); }
     else if (a === 'enviar') { enviarTudo(); }
     else if (a === 'tentar') { iniciar(); }
   });
