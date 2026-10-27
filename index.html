@@ -39,7 +39,8 @@
     height: 48px; padding: 0 14px; border: 1px solid var(--field); border-radius: 10px; background: #fff; color: var(--ink);
     font-family: inherit; font-size: 16px; min-width: 0; width: 100%;
   }
-  input:focus-visible, select:focus-visible, button:focus-visible, label:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+  textarea { min-height: 110px; padding: 12px 14px; border: 1px solid var(--field); border-radius: 10px; background: #fff; color: var(--ink); font-family: inherit; font-size: 16px; line-height: 1.4; width: 100%; resize: vertical; }
+  input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, label:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
   .grade { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
   .seg { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
   .seg button { height: 48px; border-radius: 10px; border: 1px solid var(--field); background: #fff; color: var(--ink); font-family: inherit; font-size: 16px; font-weight: 500; cursor: pointer; }
@@ -99,6 +100,7 @@
   // ===================== CONFIGURAÇÃO =====================
   var API_URL = 'https://script.google.com/macros/s/AKfycbx4lyJaTUnwaAHS3mRSrnMQcTpnXsUUIvCxXoYU0CVH3LEFGJcpH9W9w3IDgxhMT-_jsg/exec';
   var MARCA = 'RJ Work e Labore';
+  var NOME_GRUPO = 'Grupo Cores do Rio';
   var VERSAO_TEXTO = 'v1';
   var TEXTO_PRIVACIDADE = 'Seus dados e fotos ficam guardados com segurança, e só o RH da empresa pode vê-los. [Texto de privacidade a definir com o jurídico]';
   var FINALIDADE_CONFIRMACAO = '[finalidade a definir com o RH e o jurídico]';
@@ -121,7 +123,7 @@
     d: {
       nome: '', nascimento: '', pis: '', cpf: '', rg: '', titulo: '',
       sexo: '', estadoCivil: '', cep: '', numero: '', rua: '', bairro: '', cidade: '',
-      celular: '', temWhats: true, email: '', temFilhos: '', filhos: [],
+      celular: '', temWhats: true, email: '', pixTipo: '', pix: '', expectativas: '', temFilhos: '', filhos: [],
       aceite: false, declaro: false, geo: null
     }
   };
@@ -181,6 +183,14 @@
   function hojeISO() {
     var h = new Date(), p = function (n) { return String(n).padStart(2, '0'); };
     return h.getFullYear() + '-' + p(h.getMonth() + 1) + '-' + p(h.getDate());
+  }
+  function pixValido(tipo, chave) {
+    var c = String(chave || '').trim();
+    if (tipo === 'CPF') { return cpfValido(c); }
+    if (tipo === 'Celular') { var n = dig(c); return n.length === 10 || n.length === 11 || ((n.length === 12 || n.length === 13) && n.indexOf('55') === 0); }
+    if (tipo === 'E-mail') { return emailValido(c); }
+    if (tipo === 'Chave aleatória') { return /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i.test(c); }
+    return false;
   }
   function emailValido(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(v || '').trim()); }
   function primeiroNome(n) { return String(n || '').trim().split(/\s+/)[0] || ''; }
@@ -382,6 +392,8 @@
       '<label class="campo">Estado civil<select data-f="estadoCivil"><option value=""' + (d.estadoCivil ? '' : ' selected') + ' disabled>Selecione</option>' +
       ['Solteiro(a)', 'Casado(a)', 'União estável', 'Divorciado(a)', 'Viúvo(a)'].map(function (o) { return '<option' + (d.estadoCivil === o ? ' selected' : '') + '>' + o + '</option>'; }).join('') + '</select></label></div>' +
       '<div><div class="rot">Sexo</div>' + seg('sexo', d.sexo, [['Feminino', 'Feminino'], ['Masculino', 'Masculino']]) + '</div>' +
+      '<label class="campo">Quais são as suas expectativas com a empresa? O que você espera do seu trabalho no ' + esc(NOME_GRUPO) + '?' +
+      '<textarea data-f="expectativas" maxlength="1000" placeholder="Escreva com as suas palavras">' + esc(d.expectativas) + '</textarea></label>' +
       caixaErros() +
       '<div class="rodape"><button class="btn" data-acao="proximo">Continuar</button><p class="muted centro">Seu progresso fica salvo neste celular.</p></div>';
   }
@@ -396,6 +408,9 @@
       campo('Celular (com DDD)', 'celular', d.celular, { tipo: 'tel', modo: 'tel', mascara: 'celular', auto: 'tel' }) +
       '<label class="check"><input type="checkbox" data-f="temWhats"' + (d.temWhats ? ' checked' : '') + '><span>Este número tem WhatsApp</span></label>' +
       campo('E-mail', 'email', d.email, { tipo: 'email', modo: 'email', auto: 'email' }) +
+      '<label class="campo">Tipo da chave Pix<select data-f="pixTipo"><option value=""' + (d.pixTipo ? '' : ' selected') + ' disabled>Selecione</option>' +
+      ['CPF', 'Celular', 'E-mail', 'Chave aleatória'].map(function (o) { return '<option' + (d.pixTipo === o ? ' selected' : '') + '>' + o + '</option>'; }).join('') + '</select></label>' +
+      campo('Chave Pix', 'pix', d.pix) +
       '<div><div class="rot">Comprovante de residência</div>' +
       linhaDoc({ k: 'comprovante_residencia', t: 'Foto do comprovante', dica: 'Conta de luz, água, gás ou telefone', pdf: true }) + '</div>' +
       caixaErros() +
@@ -578,6 +593,7 @@
       if (dig(d.titulo).length < 8) { e.push('Confira o número do título de eleitor.'); }
       if (!d.estadoCivil) { e.push('Escolha o estado civil.'); }
       if (!d.sexo) { e.push('Escolha o sexo.'); }
+      if (String(d.expectativas).trim().length < 10) { e.push('Conte quais são as suas expectativas com a empresa.'); }
     } else if (etapa === 2) {
       if (dig(d.cep).length !== 8) { e.push('Confira o CEP.'); }
       if (!String(d.numero).trim()) { e.push('Digite o número da residência.'); }
@@ -587,6 +603,9 @@
       var tel = dig(d.celular).length;
       if (tel < 10 || tel > 11) { e.push('Confira o celular, com DDD.'); }
       if (!emailValido(d.email)) { e.push('Confira o e-mail.'); }
+      var pixOk = pixValido(d.pixTipo, d.pix);
+      if (!d.pixTipo) { e.push('Escolha o tipo da chave Pix.'); }
+      else if (!pixOk) { e.push('Confira a chave Pix: ela não combina com o tipo escolhido.'); }
       if (S.subindo.comprovante_residencia) { e.push('Espere o envio da foto terminar.'); }
       else if (!enviado('comprovante_residencia')) { e.push('Envie a foto do comprovante de residência.'); }
     } else if (etapa === 3) {
@@ -669,6 +688,7 @@
       pis: d.pis, cpf: d.cpf, rg: d.rg, titulo: d.titulo,
       cep: d.cep, rua: d.rua, numero: d.numero, bairro: d.bairro, cidade: d.cidade,
       celular: d.celular, temWhats: d.temWhats, email: d.email,
+      pixTipo: d.pixTipo, pix: String(d.pix).trim(), expectativas: String(d.expectativas).trim(),
       filhos: d.temFilhos === true ? d.filhos.map(function (f) { return { nome: f.nome, nascimento: f.nascimento, cpf: f.cpf }; }) : [],
       aceite: d.aceite, versaoTexto: VERSAO_TEXTO, declaro: d.declaro, geo: d.geo,
       assinou: true, versaoTermo: VERSAO_TERMO
