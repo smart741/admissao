@@ -71,6 +71,7 @@
   .doc .dica { font-size: 12px; color: var(--muted); }
   .cam { width: 44px; height: 44px; flex: none; border-radius: 12px; border: 0; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; }
   .cam.sec { background: #fff; color: var(--ink); border: 1px solid var(--field); }
+  .acoes { display: flex; gap: 8px; flex: none; }
   .cam input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; font-size: 0; }
   .filho { display: flex; flex-direction: column; gap: 12px; }
   .filho .cab { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -185,6 +186,7 @@
     voltar: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>',
     cam: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 011 1v9a1 1 0 01-1 1H4a1 1 0 01-1-1V9a1 1 0 011-1z"/><circle cx="12" cy="13" r="3.5"/></svg>',
     doc: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/></svg>',
+    anexo: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"/></svg>',
     ok: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
     check: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1E4FD8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/></svg>',
     cadeado: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1B3FA8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;margin-top:2px"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>',
@@ -328,11 +330,14 @@
       : '<div class="mini pend">' + IC.doc + '</div>';
     var status = sub ? '<span class="st envia">Enviando…</span>' : falha ? '<span class="st erro">' + esc(falha) + '</span>' :
       ok ? '<span class="st feito">Enviado</span>' : '<span class="st falta">Falta enviar</span>';
-    var aceita = doc.pdf ? 'image/*,application/pdf' : 'image/*';
+    var dis = sub ? ' disabled' : '';
+    var botaoCam = '<label class="cam' + (ok ? ' sec' : '') + '" aria-label="' + esc((ok ? 'Trocar a foto: ' : 'Tirar foto: ') + doc.t) + '">' + IC.cam +
+      '<input type="file" accept="image/*" capture="' + (doc.selfie ? 'user' : 'environment') + '" data-chave="' + k + '"' + dis + '></label>';
+    var botaoArq = doc.selfie ? '' : '<label class="cam sec" aria-label="Escolher uma foto ou PDF que já está no celular: ' + esc(doc.t) + '">' + IC.anexo +
+      '<input type="file" accept="image/*,application/pdf" data-chave="' + k + '"' + dis + '></label>';
     return '<div class="doc">' + mini + '<div class="txt"><span class="tit">' + esc(doc.t) + '</span>' + status +
       (doc.dica ? '<span class="dica">' + esc(doc.dica) + '</span>' : '') + '</div>' +
-      '<label class="cam' + (ok ? ' sec' : '') + '" aria-label="' + esc((ok ? 'Trocar a foto: ' : 'Tirar foto: ') + doc.t) + '">' + IC.cam +
-      '<input type="file" accept="' + aceita + '"' + (doc.selfie ? ' capture="user"' : '') + ' data-chave="' + k + '"' + (sub ? ' disabled' : '') + '></label></div>';
+      '<div class="acoes">' + botaoCam + botaoArq + '</div></div>';
   }
   function caixaErros() {
     if (!S.erros.length) { return ''; }
@@ -400,7 +405,7 @@
     var avisos = [];
     if (S.d.sexo !== 'Masculino') { avisos.push('certificado de reservista (só para homens)'); }
     if (!casado()) { avisos.push('certidão de casamento (só para casados ou em união estável)'); }
-    return topo(4) + '<div><h1>Fotos dos documentos</h1><p class="muted">Tire a foto com o documento inteiro aparecendo, bem nítido e sem reflexo.</p></div>' +
+    return topo(4) + '<div><h1>Fotos dos documentos</h1><p class="muted">Tire a foto com o documento inteiro aparecendo, bem nítido e sem reflexo. Se o arquivo já estiver no celular (foto ou PDF), use o botão de anexo ao lado da câmera.</p></div>' +
       '<div style="display:flex;flex-direction:column;gap:10px">' + lista.map(function (x) { return linhaDoc(x); }).join('') + '</div>' +
       '<p class="muted">Não se aplica a você: ' + esc(avisos.join(' e ')) + '.</p>' + caixaErros() +
       '<div class="rodape"><button class="btn" data-acao="proximo">Continuar</button></div>';
