@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Admissão de colaborador</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #F4F6FA; --surface: #FFFFFF; --ink: #0F1B2D; --ink2: #2B3A52; --muted: #55627A;
+    --line: #D9DFEA; --field: #8A96AB; --accent: #1E4FD8; --accent-soft: #E9EEFC; --accent-ink: #1B2F66;
+    --ok-bg: #DDF3E7; --ok-ink: #0F5C3A; --warn-bg: #FFF0D4; --warn-ink: #7A4300; --err-bg: #FDE6E3; --err-ink: #8A1F14;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: 'Figtree', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 16px; line-height: 1.45; }
+  #app { max-width: 480px; margin: 0 auto; min-height: 100vh; padding: 20px 20px 28px; display: flex; flex-direction: column; gap: 14px; }
+  h1 { margin: 0; font-size: 26px; line-height: 1.2; font-weight: 700; }
+  p { margin: 0; }
+  .muted { color: var(--muted); font-size: 14px; }
+  .marca { display: flex; align-items: center; gap: 12px; }
+  .marca .logo { width: 40px; height: 40px; border-radius: 10px; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+  .marca .nome { font-weight: 600; }
+  .marca .sub { font-size: 13px; color: var(--muted); }
+  .topo { display: flex; align-items: center; gap: 8px; }
+  .topo .etapa { font-size: 14px; font-weight: 600; color: var(--muted); }
+  .voltar { width: 44px; height: 44px; margin-left: -10px; border: 0; border-radius: 12px; background: transparent; color: var(--ink); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .progresso { display: flex; gap: 6px; }
+  .progresso i { flex: 1; height: 6px; border-radius: 3px; background: var(--line); }
+  .progresso i.on { background: var(--accent); }
+  label.campo { display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 500; }
+  input[type=text], input[type=tel], input[type=email], input[type=date], select {
+    height: 48px; padding: 0 14px; border: 1px solid var(--field); border-radius: 10px; background: #fff; color: var(--ink);
+    font-family: inherit; font-size: 16px; min-width: 0; width: 100%;
+  }
+  input:focus-visible, select:focus-visible, button:focus-visible, label:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .grade { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .seg { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .seg button { height: 48px; border-radius: 10px; border: 1px solid var(--field); background: #fff; color: var(--ink); font-family: inherit; font-size: 16px; font-weight: 500; cursor: pointer; }
+  .seg button[aria-pressed=true] { border: 2px solid var(--accent); background: var(--accent-soft); color: var(--accent-ink); font-weight: 600; }
+  .rot { font-size: 14px; font-weight: 500; margin-bottom: 6px; }
+  .cartao { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+  .cartao h2 { margin: 0; font-size: 15px; font-weight: 700; }
+  .lista { display: flex; flex-direction: column; gap: 10px; font-size: 15px; }
+  .lista div { display: flex; align-items: center; gap: 10px; }
+  .aviso { background: var(--accent-soft); color: var(--accent-ink); border-radius: 14px; padding: 14px; font-size: 14px; display: flex; gap: 12px; align-items: flex-start; }
+  .erro { background: var(--err-bg); color: var(--err-ink); border-radius: 12px; padding: 12px 14px; font-size: 14px; }
+  .erro ul { margin: 6px 0 0; padding-left: 18px; }
+  .ok { background: var(--ok-bg); color: var(--ok-ink); border-radius: 12px; padding: 12px 14px; font-size: 14px; }
+  .check { display: flex; align-items: center; gap: 12px; min-height: 44px; font-size: 15px; }
+  .check input { width: 24px; height: 24px; flex: none; margin: 0; accent-color: var(--accent); }
+  .btn { width: 100%; height: 52px; border: 0; border-radius: 12px; background: var(--accent); color: #fff; font-family: inherit; font-size: 17px; font-weight: 600; cursor: pointer; }
+  .btn:disabled { background: #C9D1E0; color: var(--muted); cursor: not-allowed; }
+  .btn2 { height: 44px; padding: 0 16px; border-radius: 12px; border: 1px solid var(--field); background: #fff; color: var(--accent-ink); font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; }
+  .rodape { margin-top: auto; display: flex; flex-direction: column; gap: 10px; padding-top: 8px; }
+  .doc { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; display: flex; align-items: center; gap: 12px; }
+  .doc .mini { width: 44px; height: 44px; flex: none; border-radius: 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .doc .mini.pend { border: 1.5px dashed var(--field); color: var(--muted); }
+  .doc .mini.feito { background: var(--ok-bg); color: var(--ok-ink); }
+  .doc .mini img { width: 100%; height: 100%; object-fit: cover; }
+  .doc .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .doc .tit { font-size: 15px; font-weight: 600; }
+  .doc .st { font-size: 13px; font-weight: 500; }
+  .st.falta { color: var(--warn-ink); } .st.feito { color: var(--ok-ink); } .st.envia { color: var(--accent-ink); } .st.erro { color: var(--err-ink); }
+  .doc .dica { font-size: 12px; color: var(--muted); }
+  .cam { width: 44px; height: 44px; flex: none; border-radius: 12px; border: 0; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; }
+  .cam.sec { background: #fff; color: var(--ink); border: 1px solid var(--field); }
+  .cam input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; font-size: 0; }
+  .filho { display: flex; flex-direction: column; gap: 12px; }
+  .filho .cab { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .idade { height: 48px; display: flex; align-items: center; padding: 0 14px; border-radius: 10px; background: #EAEEF5; font-weight: 600; }
+  .remover { height: 44px; padding: 0 12px; border: 0; background: transparent; color: var(--err-ink); font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .centro { text-align: center; }
+  .grande { font-size: 22px; font-weight: 700; }
+  .circulo { width: 72px; height: 72px; flex: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+  .circulo.pend { border: 1.5px dashed var(--field); color: var(--muted); }
+  .circulo.feito { background: var(--ok-bg); color: var(--ok-ink); }
+  .circulo.neutro { background: #EAEEF5; color: var(--muted); }
+  .circulo img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+</style>
+</head>
+<body>
+<div id="app" aria-live="polite"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ===================== CONFIGURAÇÃO =====================
+  var API_URL = 'COLE_AQUI_A_URL_DO_APPS_SCRIPT';
+  var MARCA = 'RJ Work e Labore';
+  var VERSAO_TEXTO = 'v1';
+  var TEXTO_PRIVACIDADE = 'Seus dados e fotos ficam guardados com segurança, e só o RH da empresa pode vê-los. [Texto de privacidade a definir com o jurídico]';
+  var FINALIDADE_CONFIRMACAO = '[finalidade a definir com o RH e o jurídico]';
+  var LOCALIZACAO_OBRIGATORIA = true;
+  var USAR_VIACEP = true;          // preenche rua, bairro e cidade pelo CEP (serviço público ViaCEP)
+  var MAX_LADO = 1600;             // lado maior da foto, em pixels
+  var QUALIDADE_JPEG = 0.8;
+  var MAX_PDF_MB = 7;
+  // ========================================================
+
+  var app = document.getElementById('app');
+  var S = {
+    tela: 'carregando', erroTela: '', token: '', nome: '', empresa: '', validade: '',
+    regras: { idadeCertidaoAte: 14, idadeVacinaAte: 7, idadeFrequenciaDe: 7, idadeFrequenciaAte: 14 },
+    etapa: 0, erros: [], enviando: false, faltam: [],
+    fotos: {}, subindo: {}, falhaFoto: {},
+    geoEstado: 'idle', geoMsg: '',
+    d: {
+      nome: '', nascimento: '', pis: '', semPis: false, cpf: '', rg: '', titulo: '', semTitulo: false,
+      sexo: '', estadoCivil: '', cep: '', numero: '', rua: '', bairro: '', cidade: '',
+      celular: '', temWhats: true, email: '', temFilhos: '', filhos: [],
+      aceite: false, declaro: false, geo: null
+    }
+  };
+
+  // ---------- utilidades ----------
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function dig(s) { return String(s || '').replace(/\D/g, ''); }
+  function mascara(v, padrao) {
+    var d = dig(v), out = '', i = 0;
+    for (var k = 0; k < padrao.length; k++) {
+      if (i >= d.length) { break; }
+      if (padrao[k] === '#') { out += d[i++]; } else { out += padrao[k]; }
+    }
+    return out;
+  }
+  var MASCARAS = {
+    cpf: function (v) { return mascara(v, '###.###.###-##'); },
+    pis: function (v) { return mascara(v, '###.#####.##-#'); },
+    cep: function (v) { return mascara(v, '#####-###'); },
+    titulo: function (v) { return mascara(v, '#### #### ####'); },
+    celular: function (v) { return dig(v).length > 10 ? mascara(v, '(##) #####-####') : mascara(v, '(##) ####-####'); }
+  };
+
+  function cpfValido(v) {
+    var s = dig(v);
+    if (s.length !== 11 || /^(\d)\1+$/.test(s)) { return false; }
+    for (var t = 9; t < 11; t++) {
+      var soma = 0;
+      for (var c = 0; c < t; c++) { soma += Number(s[c]) * ((t + 1) - c); }
+      var dv = ((10 * soma) % 11) % 10;
+      if (Number(s[t]) !== dv) { return false; }
+    }
+    return true;
+  }
+  function pisValido(v) {
+    var s = dig(v);
+    if (s.length !== 11 || /^(\d)\1+$/.test(s)) { return false; }
+    var pesos = [3, 2, 9, 8, 7, 6, 5, 4, 3, 2], soma = 0;
+    for (var i = 0; i < 10; i++) { soma += Number(s[i]) * pesos[i]; }
+    var resto = soma % 11, dv = resto < 2 ? 0 : 11 - resto;
+    return Number(s[10]) === dv;
+  }
+  function dataISO(iso) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ''));
+    if (!m) { return null; }
+    var d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+    if (d.getFullYear() !== Number(m[1]) || d.getMonth() !== Number(m[2]) - 1 || d.getDate() !== Number(m[3])) { return null; }
+    return d;
+  }
+  function idadeDe(iso) {
+    var d = dataISO(iso);
+    if (!d) { return null; }
+    var h = new Date(), idade = h.getFullYear() - d.getFullYear();
+    if (h.getMonth() < d.getMonth() || (h.getMonth() === d.getMonth() && h.getDate() < d.getDate())) { idade--; }
+    return idade;
+  }
+  function hojeISO() {
+    var h = new Date(), p = function (n) { return String(n).padStart(2, '0'); };
+    return h.getFullYear() + '-' + p(h.getMonth() + 1) + '-' + p(h.getDate());
+  }
+  function emailValido(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(v || '').trim()); }
+  function primeiroNome(n) { return String(n || '').trim().split(/\s+/)[0] || ''; }
+
+  // ---------- ícones ----------
+  var IC = {
+    voltar: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>',
+    cam: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 011 1v9a1 1 0 01-1 1H4a1 1 0 01-1-1V9a1 1 0 011-1z"/><circle cx="12" cy="13" r="3.5"/></svg>',
+    doc: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/></svg>',
+    ok: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+    check: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1E4FD8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/></svg>',
+    cadeado: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1B3FA8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;margin-top:2px"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>',
+    pessoa: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>',
+    pino: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 0114 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>',
+    mais: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>'
+  };
+
+  // ---------- documentos exigidos ----------
+  function casado() { return S.d.estadoCivil === 'Casado(a)' || S.d.estadoCivil === 'União estável'; }
+  function docsPessoais() {
+    var l = [
+      { k: 'cpf', t: 'CPF' },
+      { k: 'rg_frente', t: 'RG (frente)' },
+      { k: 'rg_verso', t: 'RG (verso)' }
+    ];
+    if (!S.d.semTitulo) { l.push({ k: 'titulo', t: 'Título de eleitor' }); }
+    if (S.d.sexo === 'Masculino') { l.push({ k: 'reservista', t: 'Certificado de reservista' }); }
+    l.push({ k: 'escolaridade', t: 'Comprovante de escolaridade', dica: 'Diploma, histórico ou declaração da escola', pdf: true });
+    if (casado()) { l.push({ k: 'certidao_casamento', t: 'Certidão de casamento', dica: 'Pedida porque você é casado(a) ou vive em união estável', pdf: true }); }
+    l.push({ k: 'jae', t: 'Cartão Jaé (vale-transporte)' });
+    return l;
+  }
+  function docsDoFilho(i) {
+    var f = S.d.filhos[i], idade = f ? idadeDe(f.nascimento) : null, n = i + 1, r = S.regras, l = [];
+    if (idade === null) { return l; }
+    if (idade < r.idadeCertidaoAte) { l.push({ k: 'filho' + n + '_certidao', t: 'Certidão de nascimento', dica: 'Pedida para menores de ' + r.idadeCertidaoAte + ' anos', pdf: true }); }
+    if (idade < r.idadeVacinaAte) { l.push({ k: 'filho' + n + '_vacina', t: 'Cartão de vacinação', dica: 'Pedido para menores de ' + r.idadeVacinaAte + ' anos', pdf: true }); }
+    if (idade >= r.idadeFrequenciaDe && idade < r.idadeFrequenciaAte) { l.push({ k: 'filho' + n + '_frequencia', t: 'Declaração de frequência escolar', dica: 'Pedida a partir de ' + r.idadeFrequenciaDe + ' anos', pdf: true }); }
+    return l;
+  }
+  function enviado(k) { return !!(S.fotos[k] && S.fotos[k].ok); }
+
+  // ---------- comunicação ----------
+  function chamar(acao, extra) {
+    var corpo = { acao: acao, token: S.token };
+    for (var k in extra) { if (Object.prototype.hasOwnProperty.call(extra, k)) { corpo[k] = extra[k]; } }
+    return fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(corpo) })
+      .then(function (r) { return r.json(); });
+  }
+
+  // ---------- rascunho no próprio celular ----------
+  function salvar() {
+    try { localStorage.setItem('admissao:' + S.token, JSON.stringify({ etapa: S.etapa, d: S.d })); } catch (e) { /* sem espaço ou bloqueado */ }
+  }
+  function carregarRascunho() {
+    try {
+      var bruto = localStorage.getItem('admissao:' + S.token);
+      if (!bruto) { return; }
+      var r = JSON.parse(bruto);
+      if (r && r.d) { for (var k in S.d) { if (r.d[k] !== undefined) { S.d[k] = r.d[k]; } } S.etapa = Math.min(Math.max(r.etapa | 0, 0), 5); }
+    } catch (e) { /* rascunho corrompido: ignora */ }
+  }
+  function limparRascunho() { try { localStorage.removeItem('admissao:' + S.token); } catch (e) { /* ok */ } }
+
+  // ---------- fotos ----------
+  function carregarImagem(file) {
+    if (window.createImageBitmap) {
+      return window.createImageBitmap(file).catch(function () { return viaImg(file); });
+    }
+    return viaImg(file);
+  }
+  function viaImg(file) {
+    return new Promise(function (resolve, reject) {
+      var url = URL.createObjectURL(file), img = new Image();
+      img.onload = function () { URL.revokeObjectURL(url); resolve(img); };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('imagem')); };
+      img.src = url;
+    });
+  }
+  function comprimir(file) {
+    if (file.type === 'application/pdf') {
+      return file.size > MAX_PDF_MB * 1024 * 1024 ? Promise.reject(new Error('grande')) : Promise.resolve(file);
+    }
+    return carregarImagem(file).then(function (img) {
+      var w = img.width, h = img.height, esc1 = Math.min(1, MAX_LADO / Math.max(w, h));
+      var c = document.createElement('canvas');
+      c.width = Math.round(w * esc1); c.height = Math.round(h * esc1);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      if (img.close) { img.close(); }
+      return new Promise(function (resolve, reject) {
+        c.toBlob(function (b) { b ? resolve(b) : reject(new Error('imagem')); }, 'image/jpeg', QUALIDADE_JPEG);
+      });
+    });
+  }
+  function paraBase64(blob) {
+    return new Promise(function (resolve, reject) {
+      var r = new FileReader();
+      r.onload = function () { resolve(String(r.result).split(',')[1] || ''); };
+      r.onerror = function () { reject(new Error('leitura')); };
+      r.readAsDataURL(blob);
+    });
+  }
+  function enviarFoto(chave, file) {
+    S.subindo[chave] = true; delete S.falhaFoto[chave]; render(true);
+    var preview = null;
+    comprimir(file)
+      .then(function (blob) {
+        preview = blob.type.indexOf('image/') === 0 ? URL.createObjectURL(blob) : null;
+        return paraBase64(blob).then(function (b64) { return chamar('arquivo', { chave: chave, mime: blob.type, dados: b64 }); });
+      })
+      .then(function (r) {
+        delete S.subindo[chave];
+        if (r && r.ok) { S.fotos[chave] = { ok: true, preview: preview }; }
+        else { S.falhaFoto[chave] = mensagemErroArquivo(r && r.erro); }
+        render(true);
+      })
+      .catch(function (e) {
+        delete S.subindo[chave];
+        S.falhaFoto[chave] = e && e.message === 'grande' ? 'O arquivo é grande demais.' :
+          e && (e.message === 'imagem' || e.message === 'leitura') ? 'Não consegui ler essa imagem. Tente tirar a foto de novo.' :
+          'Sem conexão. Tente de novo.';
+        render(true);
+      });
+  }
+  function mensagemErroArquivo(c) {
+    if (c === 'arquivo_grande') { return 'O arquivo é grande demais.'; }
+    if (c === 'tipo_invalido') { return 'Use uma foto ou um PDF.'; }
+    if (c === 'usado' || c === 'vencido' || c === 'invalido') { return 'Este link não vale mais. Peça um novo ao RH.'; }
+    return 'Não foi possível enviar. Tente de novo.';
+  }
+
+  // ---------- componentes ----------
+  function campo(rotulo, nome, valor, o) {
+    o = o || {};
+    return '<label class="campo">' + esc(rotulo) +
+      '<input type="' + (o.tipo || 'text') + '" data-f="' + nome + '"' + (o.filho !== undefined ? ' data-filho="' + o.filho + '"' : '') +
+      (o.mascara ? ' data-mask="' + o.mascara + '"' : '') + (o.modo ? ' inputmode="' + o.modo + '"' : '') +
+      (o.auto ? ' autocomplete="' + o.auto + '"' : ' autocomplete="off"') + (o.max ? ' max="' + o.max + '"' : '') +
+      (o.min ? ' min="' + o.min + '"' : '') + (o.placeholder ? ' placeholder="' + esc(o.placeholder) + '"' : '') +
+      (o.desabilitado ? ' disabled' : '') + ' value="' + esc(valor) + '"></label>';
+  }
+  function seg(nome, valor, opcoes) {
+    return '<div class="seg" role="group">' + opcoes.map(function (op) {
+      return '<button type="button" data-acao="set" data-f="' + nome + '" data-v="' + esc(op[0]) + '" aria-pressed="' + (valor === op[0]) + '">' + esc(op[1]) + '</button>';
+    }).join('') + '</div>';
+  }
+  function linhaDoc(doc, rotuloBotao) {
+    var k = doc.k, ok = enviado(k), sub = !!S.subindo[k], falha = S.falhaFoto[k];
+    var mini = ok ? '<div class="mini feito">' + (S.fotos[k].preview ? '<img alt="" src="' + esc(S.fotos[k].preview) + '">' : IC.ok) + '</div>'
+      : '<div class="mini pend">' + IC.doc + '</div>';
+    var status = sub ? '<span class="st envia">Enviando…</span>' : falha ? '<span class="st erro">' + esc(falha) + '</span>' :
+      ok ? '<span class="st feito">Enviado</span>' : '<span class="st falta">Falta enviar</span>';
+    var aceita = doc.pdf ? 'image/*,application/pdf' : 'image/*';
+    return '<div class="doc">' + mini + '<div class="txt"><span class="tit">' + esc(doc.t) + '</span>' + status +
+      (doc.dica ? '<span class="dica">' + esc(doc.dica) + '</span>' : '') + '</div>' +
+      '<label class="cam' + (ok ? ' sec' : '') + '" aria-label="' + esc((ok ? 'Trocar a foto: ' : 'Tirar foto: ') + doc.t) + '">' + IC.cam +
+      '<input type="file" accept="' + aceita + '"' + (doc.selfie ? ' capture="user"' : '') + ' data-chave="' + k + '"' + (sub ? ' disabled' : '') + '></label></div>';
+  }
+  function caixaErros() {
+    if (!S.erros.length) { return ''; }
+    return '<div class="erro" role="alert"><strong>Confira antes de continuar:</strong><ul>' +
+      S.erros.map(function (e) { return '<li>' + esc(e) + '</li>'; }).join('') + '</ul></div>';
+  }
+  function topo(n) {
+    var barras = '';
+    for (var i = 1; i <= 6; i++) { barras += '<i class="' + (i <= n ? 'on' : '') + '"></i>'; }
+    return '<div class="topo"><button class="voltar" data-acao="voltar" aria-label="Voltar">' + IC.voltar + '</button><span class="etapa">Etapa ' + n + ' de 6</span></div>' +
+      '<div class="progresso" role="img" aria-label="Progresso: etapa ' + n + ' de 6">' + barras + '</div>';
+  }
+
+  // ---------- telas ----------
+  function viewBoasVindas() {
+    var itens = ['CPF, RG e título de eleitor', 'Número do PIS', 'Comprovante de escolaridade e de residência', 'Cartão Jaé (vale-transporte)', 'Documentos dos filhos, se tiver'];
+    return '<div class="marca"><div class="logo">' + esc(MARCA.split(' ').filter(function (p) { return /^[A-ZÀ-Ú]/.test(p); }).map(function (p) { return p[0]; }).join('').slice(0, 2) || 'RJ') + '</div>' +
+      '<div><div class="nome">' + esc(MARCA) + '</div><div class="sub">Admissão na ' + esc(S.empresa) + '</div></div></div>' +
+      '<div style="display:flex;flex-direction:column;gap:8px"><h1>Olá, ' + esc(primeiroNome(S.nome)) + '!</h1>' +
+      '<p style="color:var(--ink2)">O RH pediu que você envie seus dados e documentos para a sua admissão. Leva cerca de 10 minutos, e você pode tirar as fotos na hora.</p></div>' +
+      '<div class="cartao"><h2>Tenha em mãos</h2><div class="lista">' + itens.map(function (t) { return '<div>' + IC.check + '<span>' + esc(t) + '</span></div>'; }).join('') + '</div></div>' +
+      '<div class="aviso">' + IC.cadeado + '<p>' + esc(TEXTO_PRIVACIDADE) + '</p></div>' +
+      '<label class="check"><input type="checkbox" data-f="aceite"' + (S.d.aceite ? ' checked' : '') + '><span>Li e concordo com o uso dos meus dados para a admissão.</span></label>' +
+      caixaErros() +
+      '<div class="rodape"><button class="btn" data-acao="proximo">Começar</button><p class="muted centro">Este link é só seu' + (S.validade ? ' e vale até ' + esc(S.validade) : '') + '.</p></div>';
+  }
+
+  function viewDados() {
+    var d = S.d;
+    return topo(2) + '<div><h1>Seus dados</h1><p class="muted">Confira com o seu documento antes de continuar.</p></div>' +
+      campo('Nome completo', 'nome', d.nome, { auto: 'name' }) +
+      '<div class="grade">' +
+      campo('Data de nascimento', 'nascimento', d.nascimento, { tipo: 'date', max: hojeISO() }) +
+      campo('Número do PIS', 'pis', d.pis, { modo: 'numeric', mascara: 'pis', desabilitado: d.semPis, placeholder: d.semPis ? 'Não tenho' : '' }) +
+      campo('CPF', 'cpf', d.cpf, { modo: 'numeric', mascara: 'cpf' }) +
+      campo('RG', 'rg', d.rg) +
+      campo('Título de eleitor', 'titulo', d.titulo, { modo: 'numeric', mascara: 'titulo', desabilitado: d.semTitulo, placeholder: d.semTitulo ? 'Não tenho' : '' }) +
+      '<label class="campo">Estado civil<select data-f="estadoCivil"><option value=""' + (d.estadoCivil ? '' : ' selected') + ' disabled>Selecione</option>' +
+      ['Solteiro(a)', 'Casado(a)', 'União estável', 'Divorciado(a)', 'Viúvo(a)'].map(function (o) { return '<option' + (d.estadoCivil === o ? ' selected' : '') + '>' + o + '</option>'; }).join('') + '</select></label></div>' +
+      '<label class="check"><input type="checkbox" data-f="semPis"' + (d.semPis ? ' checked' : '') + '><span>Ainda não tenho o número do PIS</span></label>' +
+      '<label class="check"><input type="checkbox" data-f="semTitulo"' + (d.semTitulo ? ' checked' : '') + '><span>Não tenho título de eleitor</span></label>' +
+      '<div><div class="rot">Sexo</div>' + seg('sexo', d.sexo, [['Feminino', 'Feminino'], ['Masculino', 'Masculino']]) + '</div>' +
+      caixaErros() +
+      '<div class="rodape"><button class="btn" data-acao="proximo">Continuar</button><p class="muted centro">Seu progresso fica salvo neste celular.</p></div>';
+  }
+
+  function viewEndereco() {
+    var d = S.d;
+    return topo(3) + '<div><h1>Seu endereço e contato</h1><p class="muted">Use o mesmo endereço que aparece no seu comprovante.</p></div>' +
+      '<div class="grade">' + campo('CEP', 'cep', d.cep, { modo: 'numeric', mascara: 'cep', auto: 'postal-code' }) +
+      campo('Número da residência', 'numero', d.numero) + '</div>' +
+      campo('Rua', 'rua', d.rua, { auto: 'street-address' }) +
+      '<div class="grade">' + campo('Bairro', 'bairro', d.bairro) + campo('Cidade', 'cidade', d.cidade, { auto: 'address-level2' }) + '</div>' +
+      campo('Celular (com DDD)', 'celular', d.celular, { tipo: 'tel', modo: 'tel', mascara: 'celular', auto: 'tel' }) +
+      '<label class="check"><input type="checkbox" data-f="temWhats"' + (d.temWhats ? ' checked' : '') + '><span>Este número tem WhatsApp</span></label>' +
+      campo('E-mail', 'email', d.email, { tipo: 'email', modo: 'email', auto: 'email' }) +
+      '<div><div class="rot">Comprovante de residência</div>' +
+      linhaDoc({ k: 'comprovante_residencia', t: 'Foto do comprovante', dica: 'Conta de luz, água, gás ou telefone', pdf: true }) + '</div>' +
+      caixaErros() +
+      '<div class="rodape"><button class="btn" data-acao="proximo">Continuar</button></div>';
+  }
+
+  function viewFotos() {
+    var lista = docsPessoais();
+    var avisos = [];
+    if (S.d.sexo !== 'Masculino') { avisos.push('certificado de reservista (só para homens)'); }
+    if (!casado()) { avisos.push('certidão de casamento (só para casados ou em união estável)'); }
+    return topo(4) + '<div><h1>Fotos dos documentos</h1><p class="muted">Tire a foto com o documento inteiro aparecendo, bem nítido e sem reflexo.</p></div>' +
+      '<div style="display:flex;flex-direction:column;gap:10px">' + lista.map(function (x) { return linhaDoc(x); }).join('') + '</div>' +
+      '<p class="muted">Não se aplica a você: ' + esc(avisos.join(' e ')) + '.</p>' + caixaErros() +
+      '<div class="rodape"><button class="btn" data-acao="proximo">Continuar</button></div>';
+  }
+
+  function viewFilhos() {
+    var d = S.d, corpo = '';
+    if (d.temFilhos === true) {
+      corpo = d.filhos.map(function (f, i) {
+        var idade = idadeDe(f.nascimento), docs = docsDoFilho(i);
+        return '<div class="cartao filho"><div class="cab"><h2>Filho ' + (i + 1) + '</h2>' +
+          '<button class="remover" data-acao="rmfilho" data-i="' + i + '">Remover</button></div>' +
+          '<div class="grade">' + campo('Nome', 'nome', f.nome, { filho: i }) + campo('Nascimento', 'nascimento', f.nascimento, { filho: i, tipo: 'date', max: hojeISO() }) +
+          campo('CPF do filho', 'cpf', f.cpf, { filho: i, modo: 'numeric', mascara: 'cpf' }) +
+          '<div class="campo">Idade<div class="idade">' + (idade === null ? '—' : idade + (idade === 1 ? ' ano' : ' anos')) + '</div></div></div>' +
+          (idade === null ? '<p class="muted">Informe o nascimento para ver quais documentos pedimos.</p>' :
+            docs.length ? '<div style="display:flex;flex-direction:column;gap:10px">' + docs.map(function (x) { return linhaDoc(x); }).join('') + '</div>' :
+            '<p class="muted">Para esta idade, só pedimos o CPF.</p>') + '</div>';
+      }).join('') + '<button class="btn2" data-acao="addfilho">' + IC.mais + 'Adicionar outro filho</button>';
+    }
+    return topo(5) + '<h1>Filhos</h1>' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><span style="font-weight:600">Você tem filhos?</span>' +
+      '<div class="seg" style="width:170px">' +
+      '<button type="button" data-acao="filhos" data-v="1" aria-pressed="' + (d.temFilhos === true) + '">Sim</button>' +
+      '<button type="button" data-acao="filhos" data-v="0" aria-pressed="' + (d.temFilhos === false) + '">Não</button></div></div>' +
+      corpo + caixaErros() + '<div class="rodape"><button class="btn" data-acao="proximo">Continuar</button></div>';
+  }
+
+  function viewConfirmacao() {
+    var d = S.d, e = S.geoEstado;
+    var selfie = linhaDoc({ k: 'selfie', t: 'Selfie', dica: 'De frente, em lugar iluminado, sem óculos escuros ou boné.', selfie: true });
+    var geoTxt = e === 'ok' ? '<span class="st feito">Localização registrada</span>' :
+      e === 'pedindo' ? '<span class="st envia">Obtendo localização…</span>' :
+      (e === 'negado' || e === 'erro') ? '<span class="st erro">' + esc(S.geoMsg) + '</span>' :
+      '<span class="st falta">Falta permitir</span>';
+    var geoLinha = '<div class="doc"><div class="mini ' + (e === 'ok' ? 'feito' : 'pend') + '">' + (e === 'ok' ? IC.ok : IC.pino) + '</div>' +
+      '<div class="txt"><span class="tit">Sua localização</span>' + geoTxt + '<span class="dica">O celular vai pedir a sua permissão.</span></div>' +
+      '<button class="cam' + (e === 'ok' ? ' sec' : '') + '" data-acao="geo" aria-label="' + (e === 'ok' ? 'Atualizar a localização' : 'Permitir o uso da localização') + '"' + (e === 'pedindo' ? ' disabled' : '') + '>' + IC.pino.replace(/width="32" height="32"/, 'width="22" height="22"') + '</button></div>';
+    var pronto = enviado('selfie') && (!LOCALIZACAO_OBRIGATORIA || e === 'ok') && d.declaro && !S.enviando && !Object.keys(S.subindo).length;
+    return topo(6) + '<div><h1>Confirme que é você</h1><p class="muted">Para finalizar, precisamos de uma selfie e da sua localização.</p></div>' +
+      selfie + geoLinha +
+      '<div class="aviso">' + IC.cadeado + '<p>A selfie e a localização servem para ' + esc(FINALIDADE_CONFIRMACAO) + '. Só o RH vê essas informações.</p></div>' +
+      '<label class="check"><input type="checkbox" data-f="declaro"' + (d.declaro ? ' checked' : '') + '><span>Declaro que os dados e os documentos que enviei são verdadeiros.</span></label>' +
+      caixaErros() +
+      '<div class="rodape"><button class="btn" data-acao="enviar"' + (pronto ? '' : ' disabled') + '>' + (S.enviando ? 'Enviando…' : 'Enviar para o RH') + '</button>' +
+      '<p class="muted centro">' + (LOCALIZACAO_OBRIGATORIA ? 'Não conseguiu permitir a localização? Avise o RH.' : 'A localização é opcional.') + '</p></div>';
+  }
+
+  function viewFinal() {
+    var falta = S.faltam.length ? '<div class="aviso" style="flex-direction:column;gap:6px"><strong>O RH pode pedir alguns documentos que ficaram faltando:</strong><span>' + esc(S.faltam.join('; ')) + '</span></div>' : '';
+    return '<div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:16px" class="centro">' +
+      '<div class="circulo feito" style="margin:0 auto">' + IC.ok.replace(/width="22" height="22"/, 'width="36" height="36"') + '</div>' +
+      '<div class="grande">Tudo certo, ' + esc(primeiroNome(S.d.nome || S.nome)) + '!</div>' +
+      '<p style="color:var(--ink2)">Recebemos seus dados e documentos. O RH da ' + esc(S.empresa) + ' vai conferir e entrar em contato.</p>' + falta +
+      '<p class="muted">Você já pode fechar esta página.</p></div>';
+  }
+
+  function viewErro() {
+    var msg = {
+      invalido: ['Link inválido', 'Este link não está certo. Confira se você copiou o endereço inteiro ou peça um novo link ao RH.'],
+      vencido: ['Link vencido', 'O prazo deste link acabou. Peça um novo link ao RH.'],
+      usado: ['Formulário já enviado', 'Este link já foi usado e seus dados já foram recebidos. Se precisar corrigir algo, fale com o RH.'],
+      rede: ['Sem conexão', 'Não consegui falar com o servidor. Verifique a internet e tente de novo.'],
+      interno: ['Algo deu errado', 'Não foi possível abrir o formulário agora. Tente de novo em instantes.']
+    }[S.erroTela] || ['Algo deu errado', 'Tente de novo em instantes.'];
+    return '<div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:12px" class="centro"><div class="grande">' + msg[0] + '</div>' +
+      '<p style="color:var(--ink2)">' + msg[1] + '</p>' +
+      ((S.erroTela === 'rede' || S.erroTela === 'interno') ? '<button class="btn" data-acao="tentar">Tentar de novo</button>' : '') + '</div>';
+  }
+
+  // ---------- desenho ----------
+  var anterior = '';
+  function render(manter) {
+    var html;
+    if (S.tela === 'carregando') { html = '<div class="centro" style="margin:auto"><p class="muted">Abrindo o formulário…</p></div>'; }
+    else if (S.tela === 'erro') { html = viewErro(); }
+    else if (S.tela === 'final') { html = viewFinal(); }
+    else { html = [viewBoasVindas, viewDados, viewEndereco, viewFotos, viewFilhos, viewConfirmacao][S.etapa](); }
+    var foco = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.f : null;
+    app.innerHTML = html;
+    if (!manter) { window.scrollTo(0, 0); }
+    if (foco && !manter) { var el = app.querySelector('[data-f="' + foco + '"]'); if (el && el.focus) { el.focus(); } }
+  }
+
+  // ---------- validação por etapa ----------
+  function validar(etapa) {
+    var d = S.d, e = [];
+    if (etapa === 0) {
+      if (!d.aceite) { e.push('Marque que você leu e concorda com o uso dos dados.'); }
+    } else if (etapa === 1) {
+      var idade = idadeDe(d.nascimento);
+      if (String(d.nome).trim().length < 3) { e.push('Digite o seu nome completo.'); }
+      if (idade === null || idade < 14 || idade > 100) { e.push('Confira a data de nascimento.'); }
+      if (!d.semPis && !pisValido(d.pis)) { e.push('Confira o número do PIS (ou marque que ainda não tem).'); }
+      if (!cpfValido(d.cpf)) { e.push('Confira o número do CPF.'); }
+      if (String(d.rg).trim().length < 5) { e.push('Digite o número do RG.'); }
+      if (!d.semTitulo && dig(d.titulo).length < 8) { e.push('Confira o número do título de eleitor (ou marque que não tem).'); }
+      if (!d.estadoCivil) { e.push('Escolha o estado civil.'); }
+      if (!d.sexo) { e.push('Escolha o sexo.'); }
+    } else if (etapa === 2) {
+      if (dig(d.cep).length !== 8) { e.push('Confira o CEP.'); }
+      if (!String(d.numero).trim()) { e.push('Digite o número da residência.'); }
+      if (String(d.rua).trim().length < 3) { e.push('Digite a rua.'); }
+      if (String(d.bairro).trim().length < 2) { e.push('Digite o bairro.'); }
+      if (String(d.cidade).trim().length < 2) { e.push('Digite a cidade.'); }
+      var tel = dig(d.celular).length;
+      if (tel < 10 || tel > 11) { e.push('Confira o celular, com DDD.'); }
+      if (!emailValido(d.email)) { e.push('Confira o e-mail.'); }
+      if (S.subindo.comprovante_residencia) { e.push('Espere o envio da foto terminar.'); }
+      else if (!enviado('comprovante_residencia')) { e.push('Envie a foto do comprovante de residência.'); }
+    } else if (etapa === 3) {
+      docsPessoais().forEach(function (x) {
+        if (S.subindo[x.k]) { e.push('Espere o envio terminar: ' + x.t + '.'); }
+        else if (!enviado(x.k)) { e.push('Falta a foto: ' + x.t + '.'); }
+      });
+    } else if (etapa === 4) {
+      if (d.temFilhos === '' || d.temFilhos === null) { e.push('Responda se você tem filhos.'); }
+      if (d.temFilhos === true) {
+        if (!d.filhos.length) { e.push('Adicione os dados do filho ou escolha "Não".'); }
+        d.filhos.forEach(function (f, i) {
+          var n = 'Filho ' + (i + 1) + ': ', idadeF = idadeDe(f.nascimento);
+          if (String(f.nome).trim().length < 2) { e.push(n + 'digite o nome.'); }
+          if (idadeF === null || idadeF < 0 || idadeF > 30) { e.push(n + 'confira a data de nascimento.'); }
+          if (!cpfValido(f.cpf)) { e.push(n + 'confira o CPF.'); }
+          docsDoFilho(i).forEach(function (x) {
+            if (S.subindo[x.k]) { e.push(n + 'espere o envio terminar (' + x.t + ').'); }
+            else if (!enviado(x.k)) { e.push(n + 'falta a foto: ' + x.t + '.'); }
+          });
+        });
+      }
+    } else if (etapa === 5) {
+      if (!enviado('selfie')) { e.push('Tire a selfie.'); }
+      if (LOCALIZACAO_OBRIGATORIA && S.geoEstado !== 'ok') { e.push('Permita o uso da localização.'); }
+      if (!d.declaro) { e.push('Marque a declaração.'); }
+    }
+    return e;
+  }
+
+  // ---------- localização ----------
+  function pedirLocalizacao() {
+    if (!navigator.geolocation) { S.geoEstado = 'erro'; S.geoMsg = 'Este aparelho não informa a localização.'; render(true); return; }
+    S.geoEstado = 'pedindo'; render(true);
+    navigator.geolocation.getCurrentPosition(function (pos) {
+      S.d.geo = { lat: Math.round(pos.coords.latitude * 1e6) / 1e6, lng: Math.round(pos.coords.longitude * 1e6) / 1e6, precisao: Math.round(pos.coords.accuracy || 0), em: new Date().toISOString() };
+      S.geoEstado = 'ok'; S.geoMsg = ''; render(true);
+    }, function (err) {
+      S.geoEstado = err && err.code === 1 ? 'negado' : 'erro';
+      S.geoMsg = err && err.code === 1 ? 'Você não permitiu. Nas configurações do navegador, permita a localização para este site e toque de novo.' : 'Não foi possível obter a localização. Tente de novo.';
+      render(true);
+    }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
+  }
+
+  // ---------- CEP ----------
+  var cepBuscado = '';
+  function buscarCep() {
+    var c = dig(S.d.cep);
+    if (!USAR_VIACEP || c.length !== 8 || c === cepBuscado) { return; }
+    cepBuscado = c;
+    var ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var t = ctl ? setTimeout(function () { ctl.abort(); }, 6000) : null;
+    fetch('https://viacep.com.br/ws/' + c + '/json/', ctl ? { signal: ctl.signal } : {})
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (t) { clearTimeout(t); }
+        if (!j || j.erro || dig(S.d.cep) !== c) { return; }
+        [['rua', j.logradouro], ['bairro', j.bairro], ['cidade', j.localidade]].forEach(function (p) {
+          if (p[1] && !String(S.d[p[0]]).trim()) {
+            S.d[p[0]] = p[1];
+            var el = app.querySelector('[data-f="' + p[0] + '"]');
+            if (el) { el.value = p[1]; }
+          }
+        });
+        salvar();
+      })
+      .catch(function () { /* sem internet ou serviço fora: o colaborador digita */ });
+  }
+
+  // ---------- envio final ----------
+  function enviarTudo() {
+    var e = validar(5);
+    if (e.length) { S.erros = e; render(true); return; }
+    S.enviando = true; S.erros = []; render(true);
+    var d = S.d;
+    var dados = {
+      nome: d.nome, nascimento: d.nascimento, sexo: d.sexo, estadoCivil: d.estadoCivil,
+      pis: d.pis, semPis: d.semPis, cpf: d.cpf, rg: d.rg, titulo: d.titulo, semTitulo: d.semTitulo,
+      cep: d.cep, rua: d.rua, numero: d.numero, bairro: d.bairro, cidade: d.cidade,
+      celular: d.celular, temWhats: d.temWhats, email: d.email,
+      filhos: d.temFilhos === true ? d.filhos.map(function (f) { return { nome: f.nome, nascimento: f.nascimento, cpf: f.cpf }; }) : [],
+      aceite: d.aceite, versaoTexto: VERSAO_TEXTO, declaro: d.declaro, geo: d.geo
+    };
+    chamar('enviar', { dados: dados }).then(function (r) {
+      S.enviando = false;
+      if (r && r.ok) { S.faltam = r.faltam || []; S.tela = 'final'; limparRascunho(); render(); }
+      else if (r && (r.erro === 'usado' || r.erro === 'vencido' || r.erro === 'invalido')) { S.tela = 'erro'; S.erroTela = r.erro; render(); }
+      else { S.erros = ['Não foi possível enviar agora. Tente de novo.']; render(true); }
+    }).catch(function () {
+      S.enviando = false; S.erros = ['Sem conexão. Verifique a internet e toque em enviar de novo.']; render(true);
+    });
+  }
+
+  // ---------- eventos ----------
+  app.addEventListener('input', function (ev) {
+    var t = ev.target, f = t.dataset && t.dataset.f;
+    if (!f || t.type === 'checkbox' || t.tagName === 'SELECT') { return; }
+    var v = t.value;
+    if (t.dataset.mask && MASCARAS[t.dataset.mask]) { v = MASCARAS[t.dataset.mask](v); if (t.value !== v) { t.value = v; } }
+    if (t.dataset.filho !== undefined) { S.d.filhos[Number(t.dataset.filho)][f] = v; } else { S.d[f] = v; }
+    if (f === 'cep' && t.dataset.filho === undefined) { buscarCep(); }
+    salvar();
+  });
+
+  app.addEventListener('change', function (ev) {
+    var t = ev.target;
+    if (t.type === 'file') {
+      var arq = t.files && t.files[0];
+      if (arq && t.dataset.chave) { enviarFoto(t.dataset.chave, arq); }
+      return;
+    }
+    var f = t.dataset && t.dataset.f;
+    if (!f) { return; }
+    if (t.type === 'checkbox') {
+      S.d[f] = t.checked;
+      if (f === 'semPis' && t.checked) { S.d.pis = ''; }
+      if (f === 'semTitulo' && t.checked) { S.d.titulo = ''; }
+      salvar(); render(true);
+    } else if (t.tagName === 'SELECT') {
+      S.d[f] = t.value; salvar();
+    } else if (t.dataset.filho !== undefined && f === 'nascimento') {
+      S.d.filhos[Number(t.dataset.filho)].nascimento = t.value; salvar(); render(true);
+    }
+  });
+
+  app.addEventListener('click', function (ev) {
+    var b = ev.target.closest ? ev.target.closest('[data-acao]') : null;
+    if (!b) { return; }
+    var a = b.dataset.acao;
+    if (a === 'set') { S.d[b.dataset.f] = b.dataset.v; salvar(); render(true); }
+    else if (a === 'proximo') {
+      S.erros = validar(S.etapa);
+      if (!S.erros.length) { S.etapa++; salvar(); render(); } else { render(true); window.scrollTo(0, document.body.scrollHeight); }
+    }
+    else if (a === 'voltar') { if (S.etapa > 0) { S.erros = []; S.etapa--; salvar(); render(); } }
+    else if (a === 'filhos') {
+      S.d.temFilhos = b.dataset.v === '1';
+      if (S.d.temFilhos && !S.d.filhos.length) { S.d.filhos.push({ nome: '', nascimento: '', cpf: '' }); }
+      salvar(); render(true);
+    }
+    else if (a === 'addfilho') { S.d.filhos.push({ nome: '', nascimento: '', cpf: '' }); salvar(); render(true); }
+    else if (a === 'rmfilho') {
+      var i = Number(b.dataset.i);
+      S.d.filhos.splice(i, 1);
+      // as fotos são numeradas por filho: ao remover um, a numeração muda e é preciso reenviar
+      Object.keys(S.fotos).forEach(function (k) { if (/^filho\d+_/.test(k)) { delete S.fotos[k]; } });
+      if (!S.d.filhos.length) { S.d.temFilhos = ''; }
+      salvar(); render(true);
+    }
+    else if (a === 'geo') { pedirLocalizacao(); }
+    else if (a === 'enviar') { enviarTudo(); }
+    else if (a === 'tentar') { iniciar(); }
+  });
+
+  // ---------- início ----------
+  function iniciar() {
+    var token = new URLSearchParams(location.search).get('c') || '';
+    S.token = token; S.tela = 'carregando'; render();
+    if (API_URL.indexOf('COLE_AQUI') === 0) { S.tela = 'erro'; S.erroTela = 'interno'; render(); return; }
+    if (!/^[a-f0-9]{32}$/.test(token)) { S.tela = 'erro'; S.erroTela = 'invalido'; render(); return; }
+    chamar('validar', {}).then(function (r) {
+      if (!r || !r.ok) { S.tela = 'erro'; S.erroTela = (r && r.erro) || 'interno'; render(); return; }
+      S.nome = r.nome; S.empresa = r.empresa; S.validade = r.validade || ''; if (r.regras) { S.regras = r.regras; }
+      (r.enviados || []).forEach(function (k) { S.fotos[k] = { ok: true, preview: null }; });
+      carregarRascunho();
+      if (!S.d.nome) { S.d.nome = r.nome; }
+      S.tela = 'form'; render();
+    }).catch(function () { S.tela = 'erro'; S.erroTela = 'rede'; render(); });
+  }
+  iniciar();
+})();
+</script>
+</body>
+</html>
