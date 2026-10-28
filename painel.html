@@ -116,6 +116,21 @@
       return crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', iterations: ITERACOES, salt: enc.encode('admissao-rh:' + String(usuario).trim().toLowerCase().slice(0, 80)) }, k, 256);
     }).then(function (bits) { return Array.from(new Uint8Array(bits)).map(function (b) { return ('0' + b.toString(16)).slice(-2); }).join(''); });
   }
+  function cpfValido(v) {
+    var s = String(v || '').replace(/\D/g, '');
+    if (s.length !== 11 || /^(\d)\1+$/.test(s)) { return false; }
+    for (var t = 9; t < 11; t++) {
+      var soma = 0;
+      for (var c = 0; c < t; c++) { soma += Number(s[c]) * ((t + 1) - c); }
+      if (Number(s[t]) !== ((10 * soma) % 11) % 10) { return false; }
+    }
+    return true;
+  }
+  function mascaraCpf(v) {
+    var d = String(v || '').replace(/\D/g, '').slice(0, 11), o = '';
+    for (var i = 0; i < d.length; i++) { o += (i === 3 || i === 6 ? '.' : i === 9 ? '-' : '') + d[i]; }
+    return o;
+  }
   function senhaFraca(senha, usuario) {
     var e = [];
     if (senha.length < 10) { e.push('pelo menos 10 caracteres'); }
@@ -255,8 +270,9 @@
       '<div class="colunas"><div class="esq"><div class="cartao"><h2>Novo convite</h2>' +
       '<label class="c">Nome do colaborador<input type="text" id="cNome" autocomplete="off"></label>' +
       '<label class="c">Empresa contratante (obrigatório)<select id="cEmpresa"><option value="" selected disabled>Selecione a empresa</option>' + opcoes + '</select></label>' +
+      '<label class="c">CPF do colaborador (obrigatório)<input type="text" id="cCpf" inputmode="numeric" autocomplete="off" placeholder="000.000.000-00"></label>' +
       '<div class="grade2"><label class="c">WhatsApp ou e-mail<input type="text" id="cContato" autocomplete="off" placeholder="(21) 90000-0000"></label><label class="c">Vale por (dias)<input type="number" id="cDias" min="1" max="30" value="7"></label></div>' +
-      '<div class="pequeno" style="margin-bottom:10px">O colaborador não consegue trocar a empresa escolhida aqui.</div><button class="btn principal" id="cGerar" data-acao="gerar" style="width:100%">Gerar link</button>' + htmlConvite() + '</div>' +
+      '<div class="pequeno" style="margin-bottom:10px">O colaborador não consegue trocar a empresa escolhida aqui e precisa digitar este CPF para abrir o formulário.</div><button class="btn principal" id="cGerar" data-acao="gerar" style="width:100%">Gerar link</button>' + htmlConvite() + '</div>' +
       '<div class="cartao" style="padding:8px"><div id="lista">' + htmlLista() + '</div></div></div><div class="dir"><div class="cartao" id="detalhe">' + htmlDetalhe() + '</div></div></div></main>' + htmlJanela();
   }
   function htmlConvite() {
@@ -395,6 +411,7 @@
   app.addEventListener('input', function (ev) {
     var t = ev.target;
     if (t.id === 'busca') { S.busca = t.value; atualizarLateral(); }
+    if (t.id === 'cCpf') { var m = mascaraCpf(t.value); if (t.value !== m) { t.value = m; } }
   });
   app.addEventListener('change', function (ev) {
     if (ev.target.id === 'filtroEmpresa') { S.emp = ev.target.value; atualizarLateral(); }
@@ -447,8 +464,9 @@
         var nome = document.getElementById('cNome').value.trim(), empresa = document.getElementById('cEmpresa').value;
         if (nome.length < 2) { S.msg = ['erro', 'Digite o nome do colaborador.']; atualizarMsg(); break; }
         if (!empresa) { S.msg = ['erro', 'Escolha a empresa contratante.']; atualizarMsg(); break; }
+        if (!cpfValido(document.getElementById('cCpf').value)) { S.msg = ['erro', 'Digite um CPF válido do colaborador.']; atualizarMsg(); break; }
         S.msg = null; atualizarMsg(); b.disabled = true; b.textContent = 'Gerando…';
-        chamar('rh_convite', { dados: { nome: nome, empresa: empresa, contato: document.getElementById('cContato').value, dias: document.getElementById('cDias').value } }).then(function (r) {
+        chamar('rh_convite', { dados: { nome: nome, empresa: empresa, cpf: document.getElementById('cCpf').value, contato: document.getElementById('cContato').value, dias: document.getElementById('cDias').value } }).then(function (r) {
           if (r && r.ok) { S.convite = r.dados; S.sit = ''; return carregar(); }
           S.msg = ['erro', textoErro(r)]; render();
         });
