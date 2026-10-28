@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<title>Admissão de colaborador</title>
+<title>Admissões Grupo Cores do Rio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap">
 <style>
   :root {
     color-scheme: light;
     --bg: #F4F6FA; --surface: #FFFFFF; --ink: #0F1B2D; --ink2: #2B3A52; --muted: #55627A;
-    --line: #D9DFEA; --field: #8A96AB; --accent: #1E4FD8; --accent-soft: #E9EEFC; --accent-ink: #1B2F66;
+    --line: #D9DFEA; --field: #8A96AB; --accent: #E30613; --accent-soft: #FDECEE; --accent-ink: #8A0A12;
     --ok-bg: #DDF3E7; --ok-ink: #0F5C3A; --warn-bg: #FFF0D4; --warn-ink: #7A4300; --err-bg: #FDE6E3; --err-ink: #8A1F14;
     box-sizing: border-box;
     padding-top: env(safe-area-inset-top, 0px);
@@ -99,7 +99,8 @@
 
   // ===================== CONFIGURAÇÃO =====================
   var API_URL = 'https://script.google.com/macros/s/AKfycbx4lyJaTUnwaAHS3mRSrnMQcTpnXsUUIvCxXoYU0CVH3LEFGJcpH9W9w3IDgxhMT-_jsg/exec';
-  var MARCA = 'RJ Work e Labore';
+  var MARCA = 'Grupo Cores do Rio';                 // usada nas iniciais do logotipo (GC)
+  var NOME_TOPO = 'Admissões Grupo Cores do Rio';   // nome que aparece no topo das telas
   var NOME_GRUPO = 'Grupo Cores do Rio';
   var VERSAO_TEXTO = 'v1';
   var TEXTO_PRIVACIDADE = 'Seus dados e fotos ficam guardados com segurança, e só o RH da empresa pode vê-los. [Texto de privacidade a definir com o jurídico]';
@@ -203,8 +204,8 @@
     doc: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/></svg>',
     anexo: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"/></svg>',
     ok: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
-    check: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1E4FD8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/></svg>',
-    cadeado: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1B3FA8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;margin-top:2px"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>',
+    check: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E30613" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/></svg>',
+    cadeado: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8A0A12" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;margin-top:2px"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>',
     pessoa: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>',
     pino: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 0114 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>',
     mais: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>'
@@ -383,7 +384,7 @@
   function viewBoasVindas() {
     var itens = ['CPF, RG e título de eleitor', 'Número do PIS', 'Comprovante de escolaridade e de residência', 'Cartão Jaé (vale-transporte)', 'Documentos dos filhos, se tiver'];
     return '<div class="marca"><div class="logo">' + esc(MARCA.split(' ').filter(function (p) { return /^[A-ZÀ-Ú]/.test(p); }).map(function (p) { return p[0]; }).join('').slice(0, 2) || 'RJ') + '</div>' +
-      '<div><div class="nome">' + esc(MARCA) + '</div><div class="sub">Admissão na ' + esc(S.empresa) + '</div></div></div>' +
+      '<div><div class="nome">' + esc(NOME_TOPO) + '</div><div class="sub">Admissão na ' + esc(S.empresa) + '</div></div></div>' +
       '<div style="display:flex;flex-direction:column;gap:8px"><h1>Olá, ' + esc(primeiroNome(S.nome)) + '!</h1>' +
       '<p style="color:var(--ink2)">O RH pediu que você envie seus dados e documentos para a sua admissão. Leva cerca de 10 minutos, e você pode tirar as fotos na hora.</p></div>' +
       '<div class="cartao"><h2>Tenha em mãos</h2><div class="lista">' + itens.map(function (t) { return '<div>' + IC.check + '<span>' + esc(t) + '</span></div>'; }).join('') + '</div></div>' +
@@ -396,7 +397,7 @@
   function viewCpf() {
     var travado = S.cpfMsg.indexOf('travado') >= 0;
     return '<div class="marca"><div class="logo">' + esc(MARCA.split(' ').filter(function (p) { return /^[A-ZÀ-Ú]/.test(p); }).map(function (p) { return p[0]; }).join('').slice(0, 2) || 'RJ') + '</div>' +
-      '<div><div class="nome">' + esc(MARCA) + '</div>' + (S.empresa ? '<div class="sub">Admissão na ' + esc(S.empresa) + '</div>' : '') + '</div></div>' +
+      '<div><div class="nome">' + esc(NOME_TOPO) + '</div>' + (S.empresa ? '<div class="sub">Admissão na ' + esc(S.empresa) + '</div>' : '') + '</div></div>' +
       '<div style="display:flex;flex-direction:column;gap:8px"><h1>Antes de começar</h1>' +
       '<p style="color:var(--ink2)">Para proteger os seus dados, confirme que é você: digite o seu CPF. Só quem foi convidado pelo RH consegue abrir este formulário.</p></div>' +
       '<form id="fCpf" style="display:flex;flex-direction:column;gap:12px"><label class="campo">Seu CPF' +
