@@ -116,6 +116,7 @@
   var app = document.getElementById('app');
   var S = {
     tela: 'carregando', erroTela: '', token: '', nome: '', empresa: '', validade: '',
+    prova: '', exigeCpf: false, cpfConfirmado: false, cpfValor: '', cpfMsg: '', cpfOcupado: false,
     regras: { idadeCertidaoAte: 14, idadeVacinaAte: 7, idadeFrequenciaDe: 7, idadeFrequenciaAte: 14 },
     etapa: 0, erros: [], enviando: false, faltam: [],
     fotos: {}, subindo: {}, falhaFoto: {},
@@ -237,9 +238,19 @@
   // ---------- comunicação ----------
   function chamar(acao, extra) {
     var corpo = { acao: acao, token: S.token };
+    if (S.prova) { corpo.prova = S.prova; }
     for (var k in extra) { if (Object.prototype.hasOwnProperty.call(extra, k)) { corpo[k] = extra[k]; } }
     return fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(corpo) })
-      .then(function (r) { return r.json(); });
+      .then(function (r) { return r.json(); })
+      .then(function (r) {
+        if (r && r.erro === 'cpf_nao_confirmado') {   // a confirmação do CPF se perdeu: volta para a tela do CPF
+          S.prova = ''; S.cpfConfirmado = false; S.subindo = {}; S.enviando = false; S.tela = 'cpf'; S.cpfMsg = '';
+          try { sessionStorage.removeItem('admissao-prova:' + S.token); } catch (e) { /* ok */ }
+          render();
+          return new Promise(function () { });
+        }
+        return r;
+      });
   }
 
   // ---------- rascunho no próprio celular ----------
@@ -254,7 +265,10 @@
       if (r && r.d) { for (var k in S.d) { if (r.d[k] !== undefined) { S.d[k] = r.d[k]; } } S.etapa = Math.min(Math.max(r.etapa | 0, 0), 6); }
     } catch (e) { /* rascunho corrompido: ignora */ }
   }
-  function limparRascunho() { try { localStorage.removeItem('admissao:' + S.token); } catch (e) { /* ok */ } }
+  function limparRascunho() {
+    try { localStorage.removeItem('admissao:' + S.token); } catch (e) { /* ok */ }
+    try { sessionStorage.removeItem('admissao-prova:' + S.token); } catch (e) { /* ok */ }
+  }
 
   // ---------- fotos ----------
   function carregarImagem(file) {
@@ -331,7 +345,7 @@
       (o.mascara ? ' data-mask="' + o.mascara + '"' : '') + (o.modo ? ' inputmode="' + o.modo + '"' : '') +
       (o.auto ? ' autocomplete="' + o.auto + '"' : ' autocomplete="off"') + (o.max ? ' max="' + o.max + '"' : '') +
       (o.min ? ' min="' + o.min + '"' : '') + (o.placeholder ? ' placeholder="' + esc(o.placeholder) + '"' : '') +
-      (o.desabilitado ? ' disabled' : '') + ' value="' + esc(valor) + '"></label>';
+      (o.desabilitado ? ' disabled' : '') + (o.somenteLeitura ? ' readonly' : '') + ' value="' + esc(valor) + '"></label>';
   }
   function seg(nome, valor, opcoes) {
     return '<div class="seg" role="group">' + opcoes.map(function (op) {
@@ -379,6 +393,44 @@
       '<div class="rodape"><button class="btn" data-acao="proximo">Começar</button><p class="muted centro">Este link é só seu' + (S.validade ? ' e vale até ' + esc(S.validade) : '') + '.</p></div>';
   }
 
+  function viewCpf() {
+    var travado = S.cpfMsg.indexOf('travado') >= 0;
+    return '<div class="marca"><div class="logo">' + esc(MARCA.split(' ').filter(function (p) { return /^[A-ZÀ-Ú]/.test(p); }).map(function (p) { return p[0]; }).join('').slice(0, 2) || 'RJ') + '</div>' +
+      '<div><div class="nome">' + esc(MARCA) + '</div>' + (S.empresa ? '<div class="sub">Admissão na ' + esc(S.empresa) + '</div>' : '') + '</div></div>' +
+      '<div style="display:flex;flex-direction:column;gap:8px"><h1>Antes de começar</h1>' +
+      '<p style="color:var(--ink2)">Para proteger os seus dados, confirme que é você: digite o seu CPF. Só quem foi convidado pelo RH consegue abrir este formulário.</p></div>' +
+      '<form id="fCpf" style="display:flex;flex-direction:column;gap:12px"><label class="campo">Seu CPF' +
+      '<input type="text" id="cpfConf" inputmode="numeric" autocomplete="off" placeholder="000.000.000-00" value="' + esc(S.cpfValor) + '"' + (travado || S.cpfOcupado ? ' disabled' : '') + '></label>' +
+      (S.cpfMsg ? '<div class="erro" role="alert">' + esc(S.cpfMsg) + '</div>' : '') +
+      '<button class="btn" type="submit"' + (travado || S.cpfOcupado ? ' disabled' : '') + '>' + (S.cpfOcupado ? 'Conferindo…' : 'Continuar') + '</button></form>' +
+      '<div class="aviso">' + IC.cadeado + '<p>Se você não é a pessoa convidada, feche esta página. As tentativas ficam registradas.</p></div>';
+  }
+
+  function confirmarCpf() {
+    var v = S.cpfValor;
+    if (!cpfValido(v)) { S.cpfMsg = 'Esse CPF não parece certo. Confira os números.'; render(true); return; }
+    S.cpfOcupado = true; S.cpfMsg = ''; render(true);
+    chamar('verificar_cpf', { cpf: dig(v) }).then(function (r) {
+      S.cpfOcupado = false;
+      if (r && r.ok) {
+        S.prova = r.prova; S.cpfConfirmado = true; S.exigeCpf = !!r.exigeCpf;
+        try { sessionStorage.setItem('admissao-prova:' + S.token, r.prova); } catch (e) { /* ok */ }
+        S.nome = r.nome; S.empresa = r.empresa; S.validade = r.validade || ''; if (r.regras) { S.regras = r.regras; }
+        (r.enviados || []).forEach(function (k) { S.fotos[k] = { ok: true, preview: null }; });
+        carregarRascunho();
+        S.d.cpf = mascara(v, '###.###.###-##');
+        if (!S.d.nome) { S.d.nome = r.nome; }
+        S.cpfValor = ''; S.tela = 'form'; render(); return;
+      }
+      if (r && (r.erro === 'usado' || r.erro === 'vencido' || r.erro === 'invalido')) { S.tela = 'erro'; S.erroTela = r.erro; render(); return; }
+      S.cpfValor = '';
+      if (r && r.erro === 'bloqueado') { S.cpfMsg = 'Muitas tentativas. Por segurança, este link ficou travado por 30 minutos. Tente de novo depois ou fale com o RH.'; }
+      else if (r && r.erro === 'cpf_incorreto') { S.cpfMsg = 'CPF incorreto. ' + (r.restantes === 1 ? 'Você ainda tem 1 tentativa.' : 'Você ainda tem ' + r.restantes + ' tentativas.'); }
+      else { S.cpfMsg = 'Algo deu errado. Tente de novo.'; }
+      render(true);
+    }).catch(function () { S.cpfOcupado = false; S.cpfMsg = 'Sem conexão. Verifique a internet e tente de novo.'; render(true); });
+  }
+
   function viewDados() {
     var d = S.d;
     return topo(2) + '<div><h1>Seus dados</h1><p class="muted">Confira com o seu documento antes de continuar.</p></div>' +
@@ -386,7 +438,7 @@
       '<div class="grade">' +
       campo('Data de nascimento', 'nascimento', d.nascimento, { tipo: 'date', max: hojeISO() }) +
       campo('Número do PIS', 'pis', d.pis, { modo: 'numeric', mascara: 'pis' }) +
-      campo('CPF', 'cpf', d.cpf, { modo: 'numeric', mascara: 'cpf' }) +
+      campo('CPF', 'cpf', d.cpf, { modo: 'numeric', mascara: 'cpf', somenteLeitura: S.cpfConfirmado }) +
       campo('RG', 'rg', d.rg) +
       campo('Título de eleitor', 'titulo', d.titulo, { modo: 'numeric', mascara: 'titulo' }) +
       '<label class="campo">Estado civil<select data-f="estadoCivil"><option value=""' + (d.estadoCivil ? '' : ' selected') + ' disabled>Selecione</option>' +
@@ -569,6 +621,7 @@
     var html;
     if (S.tela === 'carregando') { html = '<div class="centro" style="margin:auto"><p class="muted">Abrindo o formulário…</p></div>'; }
     else if (S.tela === 'erro') { html = viewErro(); }
+    else if (S.tela === 'cpf') { html = viewCpf(); }
     else if (S.tela === 'final') { html = viewFinal(); }
     else { html = [viewBoasVindas, viewDados, viewEndereco, viewFotos, viewFilhos, viewConfirmacao, viewAssinatura][S.etapa](); }
     var foco = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.f : null;
@@ -704,6 +757,7 @@
       S.enviando = false;
       if (r && r.ok) { S.faltam = r.faltam || []; S.tela = 'final'; limparRascunho(); render(); }
       else if (r && (r.erro === 'usado' || r.erro === 'vencido' || r.erro === 'invalido')) { S.tela = 'erro'; S.erroTela = r.erro; render(); }
+      else if (r && r.erro === 'cpf_diferente') { S.erros = ['O CPF que você digitou nos seus dados não é o mesmo do convite. Volte à etapa 2 e confira o CPF.']; render(true); }
       else { S.erros = ['Não foi possível enviar agora. Tente de novo.']; render(true); }
     }).catch(function (err) {
       S.enviando = false;
@@ -715,6 +769,7 @@
 
   // ---------- eventos ----------
   app.addEventListener('input', function (ev) {
+    if (ev.target && ev.target.id === 'cpfConf') { var m = MASCARAS.cpf(ev.target.value); if (ev.target.value !== m) { ev.target.value = m; } S.cpfValor = m; return; }
     var t = ev.target, f = t.dataset && t.dataset.f;
     if (!f || t.type === 'checkbox' || t.tagName === 'SELECT') { return; }
     var v = t.value;
@@ -723,6 +778,8 @@
     if (f === 'cep' && t.dataset.filho === undefined) { buscarCep(); }
     salvar();
   });
+
+  app.addEventListener('submit', function (ev) { ev.preventDefault(); if (ev.target.id === 'fCpf') { confirmarCpf(); } });
 
   app.addEventListener('change', function (ev) {
     var t = ev.target;
@@ -779,8 +836,15 @@
     S.token = token; S.tela = 'carregando'; render();
     if (API_URL.indexOf('COLE_AQUI') === 0) { S.tela = 'erro'; S.erroTela = 'interno'; render(); return; }
     if (!/^[a-f0-9]{32}$/.test(token)) { S.tela = 'erro'; S.erroTela = 'invalido'; render(); return; }
+    try { S.prova = sessionStorage.getItem('admissao-prova:' + token) || ''; } catch (e) { S.prova = ''; }
     chamar('validar', {}).then(function (r) {
       if (!r || !r.ok) { S.tela = 'erro'; S.erroTela = (r && r.erro) || 'interno'; render(); return; }
+      if (r.exigeCpf && !r.nome) {
+        S.prova = ''; S.empresa = r.empresa || ''; S.tela = 'cpf'; S.cpfMsg = ''; S.cpfValor = '';
+        try { sessionStorage.removeItem('admissao-prova:' + token); } catch (e) { /* ok */ }
+        render(); return;
+      }
+      S.exigeCpf = !!r.exigeCpf;
       S.nome = r.nome; S.empresa = r.empresa; S.validade = r.validade || ''; if (r.regras) { S.regras = r.regras; }
       (r.enviados || []).forEach(function (k) { S.fotos[k] = { ok: true, preview: null }; });
       carregarRascunho();
