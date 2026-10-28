@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
-<title>Painel do RH</title>
+<title>Admissões Grupo Cores do Rio</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap">
 <style>
-  :root { --bg:#F4F6FA; --ink:#0F1B2D; --muted:#55627A; --line:#D9DFEA; --field:#8A96AB; --accent:#1E4FD8; --accent-soft:#E9EEFC; --accent-ink:#1B2F66; }
+  :root { --bg:#F4F6FA; --ink:#0F1B2D; --muted:#55627A; --line:#D9DFEA; --field:#8A96AB; --accent:#E30613; --accent-soft:#FDECEE; --accent-ink:#8A0A12; }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--ink); font-family: 'Figtree', system-ui, Arial, sans-serif; font-size: 15px; line-height: 1.45; }
   button { font-family: inherit; }
@@ -89,7 +89,7 @@
   'use strict';
   // ======================= CONFIGURAÇÃO =======================
   var API_URL = 'https://script.google.com/macros/s/AKfycbx4lyJaTUnwaAHS3mRSrnMQcTpnXsUUIvCxXoYU0CVH3LEFGJcpH9W9w3IDgxhMT-_jsg/exec';
-  var IDLE_MS = 15 * 60 * 1000;      // sai sozinho depois de 15 minutos sem uso
+  var IDLE_MS = 30 * 60 * 1000;      // sai sozinho depois de 30 minutos sem uso (mude o 30 se quiser)
   var ITERACOES = 210000;            // custo de proteger a senha no navegador
   // ============================================================
 
@@ -173,28 +173,49 @@
   }
 
   // ---------- sessão e inatividade ----------
+  // A sessão fica guardada só na ABA (sessionStorage): o F5 não desloga, mas fechar a aba ou o navegador sim.
+  var CHAVE_SESSAO = 'rh-admissao-sessao', ultimaGravacao = 0;
+  function guardarSessao() {
+    try { sessionStorage.setItem(CHAVE_SESSAO, JSON.stringify({ s: S.sessao, n: S.nome, p: S.perfil, u: S.usuario, t: Date.now() })); ultimaGravacao = Date.now(); } catch (e) { /* ok */ }
+  }
+  function limparSessaoGuardada() { try { sessionStorage.removeItem(CHAVE_SESSAO); } catch (e) { /* ok */ } }
+  function restaurarSessao() {
+    try {
+      var bruto = sessionStorage.getItem(CHAVE_SESSAO);
+      if (!bruto) { return false; }
+      var d = JSON.parse(bruto);
+      if (!d || !d.s) { limparSessaoGuardada(); return false; }
+      if (Date.now() - d.t > IDLE_MS) { limparSessaoGuardada(); S.aviso = 'Você saiu por inatividade.'; return false; }
+      S.sessao = d.s; S.nome = d.n || ''; S.perfil = d.p || ''; S.usuario = d.u || ''; S.tela = 'painel';
+      reiniciarIdle();
+      return true;
+    } catch (e) { return false; }
+  }
   function reiniciarIdle() {
     clearTimeout(idleTimer);
-    if (S.sessao) { idleTimer = setTimeout(function () { sair('Você saiu por inatividade.'); }, IDLE_MS); }
+    if (S.sessao) {
+      idleTimer = setTimeout(function () { sair('Você saiu por inatividade.'); }, IDLE_MS);
+      if (Date.now() - ultimaGravacao > 10000) { guardarSessao(); }   // registra a última atividade (sem exagerar nas gravações)
+    }
   }
   ['click', 'keydown', 'mousemove', 'touchstart', 'scroll'].forEach(function (ev) { document.addEventListener(ev, reiniciarIdle, { passive: true }); });
   function sair(aviso) {
     if (S.sessao) { var s = S.sessao; try { fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ acao: 'rh_logout', sessao: s }) }).catch(function () { }); } catch (e) { /* ok */ } }
-    fecharViewer(); clearTimeout(idleTimer);
+    fecharViewer(); clearTimeout(idleTimer); limparSessaoGuardada();
     S = { tela: 'login', sessao: '', nome: '', perfil: '', usuario: '', aviso: aviso || '', itens: [], empresas: [], sit: 'Recebido', emp: '', busca: '', sel: '', det: null, carregandoDet: false, confirmarCancelar: false, msg: null, janela: null, viewer: null, usuarios: [], gerada: '', convite: null, ocupado: false };
     render();
   }
 
   // ---------- telas ----------
   function viewLogin() {
-    return '<div class="centro"><div class="logo" style="margin-bottom:12px">RJ</div><h1>Painel do RH</h1><p class="pequeno" style="margin:0">Acesso restrito. Tudo o que você abrir fica registrado.</p>' +
+    return '<div class="centro"><div class="logo" style="margin-bottom:12px">GC</div><h1>Admissões Grupo Cores do Rio</h1><p class="pequeno" style="margin:0">Acesso restrito ao RH. Tudo o que você abrir fica registrado.</p>' +
       (S.aviso ? '<div class="aviso" style="margin-top:12px" role="alert">' + esc(S.aviso) + '</div>' : '') +
       '<form id="fLogin" autocomplete="on"><label class="c">Usuário<input type="text" id="lUsuario" autocomplete="username" autocapitalize="none" spellcheck="false" required></label>' +
       '<label class="c">Senha<input type="password" id="lSenha" autocomplete="current-password" required></label>' +
       '<div id="lErro" role="alert"></div><button class="btn principal" type="submit" id="lEntrar">Entrar</button></form></div>';
   }
   function viewTrocar() {
-    return '<div class="centro"><div class="logo" style="margin-bottom:12px">RJ</div><h1>Crie a sua senha</h1><p class="pequeno" style="margin:0">Você entrou com uma senha provisória. Escolha uma nova, só sua.</p>' +
+    return '<div class="centro"><div class="logo" style="margin-bottom:12px">GC</div><h1>Crie a sua senha</h1><p class="pequeno" style="margin:0">Você entrou com uma senha provisória. Escolha uma nova, só sua.</p>' +
       '<form id="fTrocar"><label class="c">Senha atual (a provisória)<input type="password" id="tAtual" autocomplete="current-password" required></label>' +
       '<label class="c">Nova senha<input type="password" id="tNova" autocomplete="new-password" required></label>' +
       '<label class="c">Repita a nova senha<input type="password" id="tNova2" autocomplete="new-password" required></label>' +
@@ -265,7 +286,7 @@
   function viewPainel() {
     var empresas = S.empresas.map(function (e) { return '<option value="' + esc(e) + '"' + (S.emp === e ? ' selected' : '') + '>' + esc(e) + '</option>'; }).join('');
     var opcoes = S.empresas.map(function (e) { return '<option value="' + esc(e) + '">' + esc(e) + '</option>'; }).join('');
-    return '<div class="topo"><div class="logo">RJ</div><div><div class="t">RJ Work e Labore</div><div class="s">Admissões · Painel do RH</div></div><div class="espaco"></div>' +
+    return '<div class="topo"><div class="logo">GC</div><div><div class="t">Admissões Grupo Cores do Rio</div></div><div class="espaco"></div>' +
       '<span class="pequeno">' + esc(S.nome) + ' · ' + esc(S.perfil) + '</span>' +
       (S.perfil === 'Administrador' ? '<button class="btn" data-acao="usuarios">Usuários</button>' : '') +
       '<button class="btn" data-acao="minha-senha">Minha senha</button><button class="btn" data-acao="atualizar">Atualizar</button><button class="btn" data-acao="sair">Sair</button></div>' +
@@ -372,7 +393,7 @@
   }
 
   function aposLogin(r) {
-    S.sessao = r.sessao; S.nome = r.nome; S.perfil = r.perfil; S.aviso = ''; reiniciarIdle();
+    S.sessao = r.sessao; S.nome = r.nome; S.perfil = r.perfil; S.aviso = ''; guardarSessao(); reiniciarIdle();
     if (r.trocar) { S.tela = 'trocar'; render(); } else { S.tela = 'painel'; render(); carregar(); }
   }
 
@@ -496,7 +517,7 @@
   });
   function abrirFichaSemRecarregar(token) { abrirFicha(token, true); atualizarMsg(); }
 
-  render();
+  if (restaurarSessao()) { render(); carregar(); } else { render(); }
 })();
 </script>
 </body>
