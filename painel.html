@@ -126,6 +126,10 @@
     }
     return true;
   }
+  function telefoneValido(t) {
+    var d = String(t || '').replace(/\D/g, '');
+    return d.length === 10 || d.length === 11 || ((d.length === 12 || d.length === 13) && d.indexOf('55') === 0);
+  }
   function mascaraCpf(v) {
     var d = String(v || '').replace(/\D/g, '').slice(0, 11), o = '';
     for (var i = 0; i < d.length; i++) { o += (i === 3 || i === 6 ? '.' : i === 9 ? '-' : '') + d[i]; }
@@ -229,6 +233,7 @@
     var h = '<div class="detalhe"><div class="cab"><div class="tt"><h2>' + esc(i.nome) + '</h2><div class="pequeno">' + esc(i.empresa) + ' · <span class="sel ' + classeSit(i.situacao) + '">' + esc(i.situacao) + '</span>' + (i.enviado ? ' · recebido ' + esc(data(i.enviado)) : '') + '</div></div>';
     if (i.situacao === 'Recebido') { h += '<button class="btn principal" data-mudar="Conferido">Marcar como conferido</button>'; }
     if (i.situacao === 'Conferido') { h += '<button class="btn" data-mudar="Recebido">Desfazer conferência</button>'; }
+    if ((i.situacao === 'Aguardando' || i.situacao === 'Em preenchimento') && /[^\s@·]+@[^\s@·]+\.[^\s@·]{2,}/.test(i.contato || '')) { h += '<button class="btn" data-acao="reenviar-email">Reenviar e-mail</button>'; }
     if (i.situacao === 'Aguardando' || i.situacao === 'Em preenchimento') {
       h += S.confirmarCancelar ? '<button class="btn perigo" data-mudar="Cancelado">Confirmar cancelamento</button><button class="btn" data-acao="nao-cancelar">Voltar</button>' : '<button class="btn perigo" data-acao="cancelar">Cancelar convite</button>';
     }
@@ -271,14 +276,19 @@
       '<label class="c">Nome do colaborador<input type="text" id="cNome" autocomplete="off"></label>' +
       '<label class="c">Empresa contratante (obrigatório)<select id="cEmpresa"><option value="" selected disabled>Selecione a empresa</option>' + opcoes + '</select></label>' +
       '<label class="c">CPF do colaborador (obrigatório)<input type="text" id="cCpf" inputmode="numeric" autocomplete="off" placeholder="000.000.000-00"></label>' +
-      '<div class="grade2"><label class="c">WhatsApp ou e-mail<input type="text" id="cContato" autocomplete="off" placeholder="(21) 90000-0000"></label><label class="c">Vale por (dias)<input type="number" id="cDias" min="1" max="30" value="7"></label></div>' +
+      '<div class="grade2"><label class="c">WhatsApp<input type="text" id="cWhats" inputmode="tel" autocomplete="off" placeholder="(21) 90000-0000"></label><label class="c">E-mail<input type="text" id="cEmail" inputmode="email" autocomplete="off" autocapitalize="none" placeholder="nome@email.com"></label></div>' +
+      '<label class="c" style="flex-direction:row;align-items:center;gap:8px;font-weight:500"><input type="checkbox" id="cEnviar" checked style="width:20px;height:20px"> Enviar o link por e-mail agora</label>' +
+      '<label class="c">O link vale por (dias)<input type="number" id="cDias" min="1" max="30" value="7"></label>' +
       '<div class="pequeno" style="margin-bottom:10px">O colaborador não consegue trocar a empresa escolhida aqui e precisa digitar este CPF para abrir o formulário.</div><button class="btn principal" id="cGerar" data-acao="gerar" style="width:100%">Gerar link</button>' + htmlConvite() + '</div>' +
       '<div class="cartao" style="padding:8px"><div id="lista">' + htmlLista() + '</div></div></div><div class="dir"><div class="cartao" id="detalhe">' + htmlDetalhe() + '</div></div></div></main>' + htmlJanela();
   }
   function htmlConvite() {
     if (!S.convite) { return ''; }
     var r = S.convite;
-    return '<div class="resultado"><strong>Link gerado (uso único)</strong><div class="link">' + esc(r.link) + '</div><div class="linha"><button class="btn" data-acao="copiar">Copiar link</button><a class="btn" href="' + esc(r.whatsapp) + '" target="_blank" rel="noopener noreferrer">WhatsApp</a><a class="btn" href="' + esc(r.email) + '" target="_blank" rel="noopener noreferrer">E-mail</a></div><div class="pequeno" style="margin-top:6px">Vale até ' + esc(r.validade) + '.</div></div>';
+    return '<div class="resultado"><strong>Link gerado (uso único)</strong><div class="link">' + esc(r.link) + '</div>' +
+      (r.emailDestino ? '<div class="' + (r.emailEnviado ? 'ok' : 'aviso') + '" style="margin-bottom:8px" role="status">' + (r.emailEnviado ? 'E-mail enviado para ' + esc(r.emailDestino) + '.' : 'E-mail não enviado' + (r.emailErro ? ': ' + esc(r.emailErro) : '.')) + '</div>' : '') +
+      '<div class="linha"><button class="btn" data-acao="copiar">Copiar link</button><a class="btn" href="' + esc(r.whatsapp) + '" target="_blank" rel="noopener noreferrer">Enviar por WhatsApp</a></div>' +
+      '<div class="pequeno" style="margin-top:6px">Vale até ' + esc(r.validade) + '.</div></div>';
   }
 
   function htmlJanela() {
@@ -449,6 +459,13 @@
       case 'sair': sair('Você saiu.'); break;
       case 'atualizar': { var t = S.sel; carregar().then(function () { if (t) { abrirFichaSemRecarregar(t); } }); break; }
       case 'cancelar': S.confirmarCancelar = true; atualizarLateral(); break;
+      case 'reenviar-email': {
+        b.disabled = true;
+        chamar('rh_reenviar_email', { token: S.sel }).then(function (r) {
+          b.disabled = false; S.msg = r && r.ok ? ['ok', 'E-mail reenviado para ' + r.emailDestino + '.'] : ['erro', textoErro(r)]; atualizarMsg();
+        });
+        break;
+      }
       case 'nao-cancelar': S.confirmarCancelar = false; atualizarLateral(); break;
       case 'minha-senha': S.janela = 'senha'; S.msg = null; render(); break;
       case 'usuarios': S.gerada = ''; S.msg = null; listarUsuarios(); break;
@@ -465,8 +482,11 @@
         if (nome.length < 2) { S.msg = ['erro', 'Digite o nome do colaborador.']; atualizarMsg(); break; }
         if (!empresa) { S.msg = ['erro', 'Escolha a empresa contratante.']; atualizarMsg(); break; }
         if (!cpfValido(document.getElementById('cCpf').value)) { S.msg = ['erro', 'Digite um CPF válido do colaborador.']; atualizarMsg(); break; }
+        var wz = document.getElementById('cWhats').value.trim(), em = document.getElementById('cEmail').value.trim();
+        if (wz && !telefoneValido(wz)) { S.msg = ['erro', 'Confira o WhatsApp do colaborador (com DDD).']; atualizarMsg(); break; }
+        if (em && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(em)) { S.msg = ['erro', 'Confira o e-mail do colaborador.']; atualizarMsg(); break; }
         S.msg = null; atualizarMsg(); b.disabled = true; b.textContent = 'Gerando…';
-        chamar('rh_convite', { dados: { nome: nome, empresa: empresa, cpf: document.getElementById('cCpf').value, contato: document.getElementById('cContato').value, dias: document.getElementById('cDias').value } }).then(function (r) {
+        chamar('rh_convite', { dados: { nome: nome, empresa: empresa, cpf: document.getElementById('cCpf').value, whatsapp: wz, email: em, enviarEmail: document.getElementById('cEnviar').checked, dias: document.getElementById('cDias').value } }).then(function (r) {
           if (r && r.ok) { S.convite = r.dados; S.sit = ''; return carregar(); }
           S.msg = ['erro', textoErro(r)]; render();
         });
