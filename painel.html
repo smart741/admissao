@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Painel do RH</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+  :root { --bg:#F4F6FA; --ink:#0F1B2D; --muted:#55627A; --line:#D9DFEA; --field:#8A96AB; --accent:#1E4FD8; --accent-soft:#E9EEFC; --accent-ink:#1B2F66; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: 'Figtree', system-ui, Arial, sans-serif; font-size: 15px; line-height: 1.45; }
+  button { font-family: inherit; }
+  [hidden] { display: none !important; }
+  .topo { background: #fff; border-bottom: 1px solid var(--line); padding: 10px 20px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+  .logo { width: 34px; height: 34px; border-radius: 9px; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; }
+  .topo .t { font-weight: 600; } .topo .s { font-size: 12px; color: var(--muted); }
+  .espaco { flex: 1; } .pequeno { font-size: 13px; color: var(--muted); }
+  main { max-width: 1240px; margin: 0 auto; padding: 18px 20px 40px; display: flex; flex-direction: column; gap: 16px; }
+  .linha { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+  h1 { margin: 0; font-size: 24px; font-weight: 700; flex: 1 1 160px; }
+  input[type=text], input[type=password], input[type=number], input[type=search], select {
+    height: 42px; padding: 0 12px; border: 1px solid var(--field); border-radius: 10px; background: #fff; color: var(--ink); font-family: inherit; font-size: 15px; min-width: 0;
+  }
+  input:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { height: 40px; padding: 0 14px; border-radius: 20px; border: 1px solid var(--field); background: #fff; color: var(--ink); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .chip[aria-pressed=true] { border: 2px solid var(--accent); background: var(--accent-soft); color: var(--accent-ink); }
+  .btn { height: 42px; padding: 0 16px; border-radius: 10px; border: 1px solid var(--field); background: #fff; color: var(--ink); font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
+  .btn.principal { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.perigo { color: #8A1F14; }
+  .btn:disabled { background: #C9D1E0; border-color: #C9D1E0; color: var(--muted); cursor: not-allowed; }
+  .colunas { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+  .esq { flex: 1 1 340px; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+  .dir { flex: 999 1 540px; min-width: 0; }
+  .cartao { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+  .cartao h2 { margin: 0 0 10px; font-size: 16px; font-weight: 700; }
+  label.c { display: flex; flex-direction: column; gap: 5px; font-size: 13px; font-weight: 600; margin-bottom: 10px; }
+  label.c input, label.c select { width: 100%; }
+  .grade2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .resultado { background: var(--bg); border-radius: 10px; padding: 12px; margin-top: 10px; }
+  .link { font-family: ui-monospace, Menlo, monospace; font-size: 12px; word-break: break-all; margin: 6px 0 10px; }
+  .item { width: 100%; text-align: left; border: 0; border-radius: 10px; background: #fff; padding: 11px 12px; display: flex; align-items: center; gap: 10px; cursor: pointer; color: var(--ink); }
+  .item[aria-current=true] { background: var(--accent-soft); }
+  .item .n { font-weight: 600; } .item .d { font-size: 12.5px; color: var(--muted); }
+  .item .corpo { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .sel { font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 12px; white-space: nowrap; }
+  .s-Aguardando { background: #EAEEF5; color: #3C4A63; } .s-Em-preenchimento { background: #FFF0D4; color: #7A4300; }
+  .s-Recebido { background: #E6EDFF; color: #1B3FA8; } .s-Conferido { background: #DDF3E7; color: #0F5C3A; } .s-Cancelado { background: #FDE6E3; color: #8A1F14; }
+  .s-Ativo { background: #DDF3E7; color: #0F5C3A; } .s-Inativo { background: #FDE6E3; color: #8A1F14; }
+  .vazio { padding: 28px 12px; text-align: center; color: var(--muted); }
+  .detalhe { display: flex; flex-direction: column; gap: 18px; }
+  .cab { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  .cab .tt { flex: 1 1 240px; } .cab h2 { margin: 0; font-size: 22px; }
+  .aviso { background: #FFF0D4; color: #7A4300; border-radius: 10px; padding: 10px 14px; font-size: 14px; font-weight: 500; }
+  .erro { background: #FDE6E3; color: #8A1F14; border-radius: 10px; padding: 10px 14px; font-size: 14px; }
+  .ok { background: #DDF3E7; color: #0F5C3A; border-radius: 10px; padding: 10px 14px; font-size: 14px; }
+  .sec h3 { margin: 0 0 8px; font-size: 15px; }
+  .dados { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px 20px; }
+  .dados .r { font-size: 12px; font-weight: 500; color: var(--muted); } .dados .v { font-size: 15px; font-weight: 600; word-break: break-word; }
+  .texto { white-space: pre-wrap; background: var(--bg); border-radius: 10px; padding: 10px 12px; font-size: 14px; }
+  .docs { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }
+  .doc { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; display: flex; align-items: center; gap: 8px; justify-content: space-between; font-size: 14px; font-weight: 600; }
+  .doc button { font-size: 13px; font-weight: 600; color: var(--accent); background: #fff; border: 1px solid var(--field); border-radius: 8px; padding: 4px 10px; cursor: pointer; }
+  /* login */
+  .centro { max-width: 400px; margin: 10vh auto 0; padding: 0 20px; }
+  .centro h1 { margin-bottom: 4px; flex: none; }
+  .centro form { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 20px; display: grid; gap: 4px; margin-top: 14px; }
+  .centro .btn { width: 100%; height: 48px; font-size: 16px; margin-top: 8px; }
+  /* janelas */
+  .fundo { position: fixed; inset: 0; background: rgba(15,27,45,.55); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 10; }
+  .janela { background: #fff; border-radius: 14px; width: 100%; max-width: 760px; max-height: 92vh; overflow: auto; padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+  .janela.larga { max-width: 960px; }
+  .janela .cabj { display: flex; align-items: center; gap: 10px; } .janela .cabj h2 { margin: 0; font-size: 18px; flex: 1; }
+  .visor { background: #EAEEF5; border-radius: 10px; display: flex; align-items: center; justify-content: center; min-height: 240px; overflow: auto; }
+  .visor img { max-width: 100%; max-height: 70vh; } .visor iframe { width: 100%; height: 70vh; border: 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; } th { text-align: left; font-size: 12px; color: var(--muted); font-weight: 600; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+  td { padding: 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  td .btn { height: 34px; font-size: 13px; padding: 0 10px; }
+  .senhaGerada { font-family: ui-monospace, Menlo, monospace; font-weight: 700; background: var(--bg); padding: 6px 10px; border-radius: 8px; display: inline-block; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+(function () {
+  'use strict';
+  // ======================= CONFIGURAÇÃO =======================
+  var API_URL = 'https://script.google.com/macros/s/AKfycbx4lyJaTUnwaAHS3mRSrnMQcTpnXsUUIvCxXoYU0CVH3LEFGJcpH9W9w3IDgxhMT-_jsg/exec';
+  var IDLE_MS = 15 * 60 * 1000;      // sai sozinho depois de 15 minutos sem uso
+  var ITERACOES = 210000;            // custo de proteger a senha no navegador
+  // ============================================================
+
+  var app = document.getElementById('app');
+  var S = { tela: 'login', sessao: '', nome: '', perfil: '', usuario: '', aviso: '', itens: [], empresas: [], sit: 'Recebido', emp: '', busca: '',
+            sel: '', det: null, carregandoDet: false, confirmarCancelar: false, msg: null, janela: null, viewer: null, usuarios: [], gerada: '', convite: null, ocupado: false };
+  var CHIPS = [['', 'Todos'], ['Aguardando', 'Aguardando'], ['Em preenchimento', 'Em preenchimento'], ['Recebido', 'Recebidos'], ['Conferido', 'Conferidos']];
+  var GRUPOS = [
+    ['Identificação', ['Data de nascimento', 'Sexo', 'Estado civil', 'PIS', 'CPF', 'RG', 'Título de eleitor']],
+    ['Contato e endereço', ['Celular', 'Tem WhatsApp', 'E-mail', 'CEP', 'Rua', 'Número', 'Bairro', 'Cidade']],
+    ['Pix', ['Tipo da chave Pix', 'Chave Pix']]
+  ];
+  var idleTimer = null;
+
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function norm(s) { return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
+  function data(t) { var m = /^(\d{4})-(\d{2})-(\d{2})(?: (\d{2}:\d{2}))?/.exec(String(t || '')); return m ? m[3] + '/' + m[2] + '/' + m[1] + (m[4] ? ' ' + m[4] : '') : String(t || ''); }
+  function classeSit(s) { return 's-' + String(s).replace(/\s+/g, '-'); }
+
+  // ---------- proteger a senha no navegador ----------
+  function derivar(usuario, senha) {
+    var enc = new TextEncoder();
+    return crypto.subtle.importKey('raw', enc.encode(String(senha).normalize('NFKC')), 'PBKDF2', false, ['deriveBits']).then(function (k) {
+      return crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', iterations: ITERACOES, salt: enc.encode('admissao-rh:' + String(usuario).trim().toLowerCase().slice(0, 80)) }, k, 256);
+    }).then(function (bits) { return Array.from(new Uint8Array(bits)).map(function (b) { return ('0' + b.toString(16)).slice(-2); }).join(''); });
+  }
+  function senhaFraca(senha, usuario) {
+    var e = [];
+    if (senha.length < 10) { e.push('pelo menos 10 caracteres'); }
+    if (!/[A-Za-z]/.test(senha) || !/[0-9]/.test(senha)) { e.push('letras e números'); }
+    var parte = String(usuario).split('@')[0].toLowerCase();
+    if (parte.length >= 3 && senha.toLowerCase().indexOf(parte) >= 0) { e.push('não pode conter o seu usuário'); }
+    return e;
+  }
+  function gerarSenha() {
+    var letras = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz', nums = '23456789', simb = '#$%&*+-=?';
+    var todos = letras + nums + simb, buf = new Uint32Array(14), out = '';
+    crypto.getRandomValues(buf);
+    for (var i = 0; i < 14; i++) { out += todos.charAt(buf[i] % todos.length); }
+    return out.slice(0, 11) + letras.charAt(buf[0] % letras.length) + nums.charAt(buf[1] % nums.length) + simb.charAt(buf[2] % simb.length);
+  }
+
+  // ---------- comunicação ----------
+  function chamar(acao, extra) {
+    var corpo = { acao: acao };
+    if (S.sessao) { corpo.sessao = S.sessao; }
+    for (var k in extra) { if (Object.prototype.hasOwnProperty.call(extra, k)) { corpo[k] = extra[k]; } }
+    return fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(corpo) })
+      .then(function (r) { return r.json(); })
+      .then(function (r) {
+        if (r && r.erro === 'sessao' && acao !== 'rh_login') { sair('Sua sessão terminou. Entre de novo.'); return new Promise(function () { }); }
+        if (r && r.erro === 'trocar_senha') { S.tela = 'trocar'; render(); return new Promise(function () { }); }
+        return r;
+      });
+  }
+  function textoErro(r) {
+    var m = { credenciais: 'Usuário ou senha incorretos.', bloqueado: 'Muitas tentativas. Aguarde 15 minutos e tente de novo.', usuario_invalido: 'Usuário inválido. Use letras, números, ponto, @ ou traço, sem espaços.',
+      nome_invalido: 'Digite o nome.', perfil_invalido: 'Escolha o perfil.', usuario_existe: 'Esse usuário já existe.', usuario_nao_existe: 'Esse usuário não existe.',
+      nao_a_si_mesmo: 'Você não pode desativar o seu próprio usuário.', ultimo_admin: 'Precisa continuar existindo pelo menos um administrador ativo.', sem_permissao: 'Você não tem permissão para isso.',
+      senha_igual: 'A nova senha não pode ser igual à atual.', arquivo_invalido: 'Não foi possível abrir esse arquivo.', convite_invalido: (r && r.mensagem) || 'Não foi possível criar o convite.' };
+    return (r && m[r.erro]) || 'Algo deu errado. Tente de novo.';
+  }
+
+  // ---------- sessão e inatividade ----------
+  function reiniciarIdle() {
+    clearTimeout(idleTimer);
+    if (S.sessao) { idleTimer = setTimeout(function () { sair('Você saiu por inatividade.'); }, IDLE_MS); }
+  }
+  ['click', 'keydown', 'mousemove', 'touchstart', 'scroll'].forEach(function (ev) { document.addEventListener(ev, reiniciarIdle, { passive: true }); });
+  function sair(aviso) {
+    if (S.sessao) { var s = S.sessao; try { fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ acao: 'rh_logout', sessao: s }) }).catch(function () { }); } catch (e) { /* ok */ } }
+    fecharViewer(); clearTimeout(idleTimer);
+    S = { tela: 'login', sessao: '', nome: '', perfil: '', usuario: '', aviso: aviso || '', itens: [], empresas: [], sit: 'Recebido', emp: '', busca: '', sel: '', det: null, carregandoDet: false, confirmarCancelar: false, msg: null, janela: null, viewer: null, usuarios: [], gerada: '', convite: null, ocupado: false };
+    render();
+  }
+
+  // ---------- telas ----------
+  function viewLogin() {
+    return '<div class="centro"><div class="logo" style="margin-bottom:12px">RJ</div><h1>Painel do RH</h1><p class="pequeno" style="margin:0">Acesso restrito. Tudo o que você abrir fica registrado.</p>' +
+      (S.aviso ? '<div class="aviso" style="margin-top:12px" role="alert">' + esc(S.aviso) + '</div>' : '') +
+      '<form id="fLogin" autocomplete="on"><label class="c">Usuário<input type="text" id="lUsuario" autocomplete="username" autocapitalize="none" spellcheck="false" required></label>' +
+      '<label class="c">Senha<input type="password" id="lSenha" autocomplete="current-password" required></label>' +
+      '<div id="lErro" role="alert"></div><button class="btn principal" type="submit" id="lEntrar">Entrar</button></form></div>';
+  }
+  function viewTrocar() {
+    return '<div class="centro"><div class="logo" style="margin-bottom:12px">RJ</div><h1>Crie a sua senha</h1><p class="pequeno" style="margin:0">Você entrou com uma senha provisória. Escolha uma nova, só sua.</p>' +
+      '<form id="fTrocar"><label class="c">Senha atual (a provisória)<input type="password" id="tAtual" autocomplete="current-password" required></label>' +
+      '<label class="c">Nova senha<input type="password" id="tNova" autocomplete="new-password" required></label>' +
+      '<label class="c">Repita a nova senha<input type="password" id="tNova2" autocomplete="new-password" required></label>' +
+      '<div class="pequeno">Pelo menos 10 caracteres, com letras e números, sem o seu usuário.</div><div id="tErro" role="alert"></div>' +
+      '<button class="btn principal" type="submit" id="tSalvar">Salvar nova senha</button><button class="btn" type="button" data-acao="sair" style="margin-top:6px">Sair</button></form></div>';
+  }
+
+  function filtrado(ignorarSit) {
+    var b = norm(S.busca);
+    return S.itens.filter(function (i) {
+      if (S.emp && i.empresa !== S.emp) { return false; }
+      if (b && norm(i.nome + ' ' + i.empresa).indexOf(b) < 0) { return false; }
+      if (!ignorarSit && S.sit && i.situacao !== S.sit) { return false; }
+      return true;
+    });
+  }
+  function htmlChips() {
+    var base = filtrado(true);
+    return CHIPS.map(function (c) {
+      var n = base.filter(function (i) { return !c[0] || i.situacao === c[0]; }).length;
+      return '<button class="chip" data-sit="' + esc(c[0]) + '" aria-pressed="' + (S.sit === c[0]) + '">' + esc(c[1]) + ' · ' + n + '</button>';
+    }).join('');
+  }
+  function htmlLista() {
+    var l = filtrado(false);
+    if (!l.length) { return '<div class="vazio">Nenhum colaborador nesta seleção.</div>'; }
+    return l.map(function (i) {
+      var q = i.situacao === 'Recebido' || i.situacao === 'Conferido' ? 'recebido ' + data(i.enviado) : i.situacao === 'Em preenchimento' ? i.arquivos + ' arquivos enviados' : 'vale até ' + data(i.validade);
+      return '<button class="item" data-token="' + esc(i.token) + '" aria-current="' + (i.token === S.sel) + '"><span class="corpo"><span class="n">' + esc(i.nome) + '</span><span class="d">' + esc(i.empresa) + ' · ' + esc(q) + '</span></span><span class="sel ' + classeSit(i.situacao) + '">' + esc(i.situacao) + '</span></button>';
+    }).join('');
+  }
+  function campo(r, v) { return '<div><div class="r">' + esc(r) + '</div><div class="v">' + esc(v || '—') + '</div></div>'; }
+  function htmlDetalhe() {
+    var i = S.itens.filter(function (x) { return x.token === S.sel; })[0];
+    if (!i) { return '<div class="vazio">Escolha um colaborador na lista.</div>'; }
+    var h = '<div class="detalhe"><div class="cab"><div class="tt"><h2>' + esc(i.nome) + '</h2><div class="pequeno">' + esc(i.empresa) + ' · <span class="sel ' + classeSit(i.situacao) + '">' + esc(i.situacao) + '</span>' + (i.enviado ? ' · recebido ' + esc(data(i.enviado)) : '') + '</div></div>';
+    if (i.situacao === 'Recebido') { h += '<button class="btn principal" data-mudar="Conferido">Marcar como conferido</button>'; }
+    if (i.situacao === 'Conferido') { h += '<button class="btn" data-mudar="Recebido">Desfazer conferência</button>'; }
+    if (i.situacao === 'Aguardando' || i.situacao === 'Em preenchimento') {
+      h += S.confirmarCancelar ? '<button class="btn perigo" data-mudar="Cancelado">Confirmar cancelamento</button><button class="btn" data-acao="nao-cancelar">Voltar</button>' : '<button class="btn perigo" data-acao="cancelar">Cancelar convite</button>';
+    }
+    h += '</div>';
+    if (i.faltam) { h += '<div class="aviso">Falta: ' + esc(i.faltam) + '</div>'; }
+    if (i.situacao === 'Aguardando' || i.situacao === 'Em preenchimento') { h += '<div class="pequeno">O colaborador ainda não terminou. O convite vale até ' + esc(data(i.validade)) + '.' + (i.contato ? ' Contato: ' + esc(i.contato) + '.' : '') + '</div>'; }
+    if (S.carregandoDet) { h += '<div class="vazio">Carregando…</div>'; }
+    else if (S.det) {
+      var d = S.det.dados || {};
+      GRUPOS.forEach(function (g) {
+        if (!g[1].some(function (r) { return d[r]; })) { return; }
+        h += '<div class="sec"><h3>' + esc(g[0]) + '</h3><div class="dados">' + g[1].map(function (r) { return campo(r, d[r]); }).join('') + '</div></div>';
+      });
+      if (d['Filhos']) { h += '<div class="sec"><h3>Filhos</h3><div class="texto">' + esc(d['Filhos']) + '</div></div>'; }
+      if (d['Expectativas com a empresa']) { h += '<div class="sec"><h3>Expectativas com a empresa</h3><div class="texto">' + esc(d['Expectativas com a empresa']) + '</div></div>'; }
+      if (d['Aceite de privacidade'] || d['Local no mapa']) {
+        h += '<div class="sec"><h3>Confirmação</h3><div class="dados"><div><div class="r">Localização</div><div class="v">' + (d['Local no mapa'] ? '<a href="' + esc(d['Local no mapa']) + '" target="_blank" rel="noopener noreferrer">Ver no mapa</a>' + (d['Precisão (m)'] ? ' (precisão ' + esc(d['Precisão (m)']) + ' m)' : '') : '—') + '</div></div>' +
+          campo('Aceite de privacidade', d['Aceite de privacidade']) + campo('Declaração de veracidade', d['Declaração de veracidade']) + '</div></div>';
+      }
+      if (S.det.arquivos && S.det.arquivos.length) {
+        h += '<div class="sec"><h3>Documentos (' + S.det.arquivos.length + ')</h3><div class="docs">' + S.det.arquivos.map(function (a) {
+          return '<div class="doc"><span>' + esc(a.nome.replace(/\.[a-z0-9]+$/i, '')) + '</span><button data-doc="' + esc(a.chave) + '" data-nome="' + esc(a.nome) + '">Abrir</button></div>';
+        }).join('') + '</div></div>';
+      }
+    }
+    return h + '</div>';
+  }
+
+  function viewPainel() {
+    var empresas = S.empresas.map(function (e) { return '<option value="' + esc(e) + '"' + (S.emp === e ? ' selected' : '') + '>' + esc(e) + '</option>'; }).join('');
+    var opcoes = S.empresas.map(function (e) { return '<option value="' + esc(e) + '">' + esc(e) + '</option>'; }).join('');
+    return '<div class="topo"><div class="logo">RJ</div><div><div class="t">RJ Work e Labore</div><div class="s">Admissões · Painel do RH</div></div><div class="espaco"></div>' +
+      '<span class="pequeno">' + esc(S.nome) + ' · ' + esc(S.perfil) + '</span>' +
+      (S.perfil === 'Administrador' ? '<button class="btn" data-acao="usuarios">Usuários</button>' : '') +
+      '<button class="btn" data-acao="minha-senha">Minha senha</button><button class="btn" data-acao="atualizar">Atualizar</button><button class="btn" data-acao="sair">Sair</button></div>' +
+      '<main><div class="linha"><h1>Admissões</h1><input type="search" id="busca" placeholder="Buscar colaborador" aria-label="Buscar colaborador" value="' + esc(S.busca) + '" style="min-width:220px">' +
+      '<label class="pequeno" style="display:flex;align-items:center;gap:8px">Empresa<select id="filtroEmpresa"><option value="">Todas as empresas</option>' + empresas + '</select></label></div>' +
+      '<div class="chips" id="chips">' + htmlChips() + '</div><div id="mensagem">' + (S.msg ? '<div class="' + S.msg[0] + '" role="status">' + esc(S.msg[1]) + '</div>' : '') + '</div>' +
+      '<div class="colunas"><div class="esq"><div class="cartao"><h2>Novo convite</h2>' +
+      '<label class="c">Nome do colaborador<input type="text" id="cNome" autocomplete="off"></label>' +
+      '<label class="c">Empresa contratante (obrigatório)<select id="cEmpresa"><option value="" selected disabled>Selecione a empresa</option>' + opcoes + '</select></label>' +
+      '<div class="grade2"><label class="c">WhatsApp ou e-mail<input type="text" id="cContato" autocomplete="off" placeholder="(21) 90000-0000"></label><label class="c">Vale por (dias)<input type="number" id="cDias" min="1" max="30" value="7"></label></div>' +
+      '<div class="pequeno" style="margin-bottom:10px">O colaborador não consegue trocar a empresa escolhida aqui.</div><button class="btn principal" id="cGerar" data-acao="gerar" style="width:100%">Gerar link</button>' + htmlConvite() + '</div>' +
+      '<div class="cartao" style="padding:8px"><div id="lista">' + htmlLista() + '</div></div></div><div class="dir"><div class="cartao" id="detalhe">' + htmlDetalhe() + '</div></div></div></main>' + htmlJanela();
+  }
+  function htmlConvite() {
+    if (!S.convite) { return ''; }
+    var r = S.convite;
+    return '<div class="resultado"><strong>Link gerado (uso único)</strong><div class="link">' + esc(r.link) + '</div><div class="linha"><button class="btn" data-acao="copiar">Copiar link</button><a class="btn" href="' + esc(r.whatsapp) + '" target="_blank" rel="noopener noreferrer">WhatsApp</a><a class="btn" href="' + esc(r.email) + '" target="_blank" rel="noopener noreferrer">E-mail</a></div><div class="pequeno" style="margin-top:6px">Vale até ' + esc(r.validade) + '.</div></div>';
+  }
+
+  function htmlJanela() {
+    if (S.viewer) {
+      var v = S.viewer, corpo = v.carregando ? '<div class="vazio">Abrindo…</div>' : v.erro ? '<div class="erro">' + esc(v.erro) + '</div>' :
+        (v.mime === 'application/pdf' ? '<iframe src="' + esc(v.url) + '" title="' + esc(v.nome) + '"></iframe>' : '<img alt="' + esc(v.nome) + '" src="' + esc(v.url) + '">');
+      return '<div class="fundo" role="dialog" aria-modal="true" aria-label="Documento"><div class="janela larga"><div class="cabj"><h2>' + esc(v.nome) + '</h2>' +
+        (v.url ? '<a class="btn" href="' + esc(v.url) + '" download="' + esc(v.nome) + '">Baixar</a>' : '') + '<button class="btn" data-acao="fechar-doc">Fechar</button></div><div class="visor">' + corpo + '</div></div></div>';
+    }
+    if (S.janela === 'senha') {
+      return '<div class="fundo" role="dialog" aria-modal="true"><div class="janela" style="max-width:420px"><div class="cabj"><h2>Minha senha</h2><button class="btn" data-acao="fechar-janela">Fechar</button></div>' +
+        '<form id="fSenha"><label class="c">Senha atual<input type="password" id="sAtual" autocomplete="current-password" required></label><label class="c">Nova senha<input type="password" id="sNova" autocomplete="new-password" required></label>' +
+        '<label class="c">Repita a nova senha<input type="password" id="sNova2" autocomplete="new-password" required></label><div id="sErro" role="alert"></div><button class="btn principal" type="submit" id="sSalvar" style="width:100%">Salvar</button></form></div></div>';
+    }
+    if (S.janela === 'usuarios') {
+      var linhas = S.usuarios.map(function (u) {
+        var eu = u.usuario === S.usuario;
+        return '<tr><td><strong>' + esc(u.nome) + '</strong><div class="pequeno">' + esc(u.usuario) + '</div></td><td>' + esc(u.perfil) + '</td><td><span class="sel ' + classeSit(u.situacao) + '">' + esc(u.situacao) + '</span>' + (u.trocar ? '<div class="pequeno">troca de senha pendente</div>' : '') + '</td><td>' + esc(data(u.ultimo) || '—') + '</td>' +
+          '<td style="white-space:nowrap"><button class="btn" data-redef="' + esc(u.usuario) + '">Redefinir senha</button> ' + (eu ? '' : '<button class="btn ' + (u.situacao === 'Ativo' ? 'perigo' : '') + '" data-alt="' + esc(u.usuario) + '" data-sit-novo="' + (u.situacao === 'Ativo' ? 'Inativo' : 'Ativo') + '">' + (u.situacao === 'Ativo' ? 'Desativar' : 'Reativar') + '</button>') + '</td></tr>';
+      }).join('');
+      return '<div class="fundo" role="dialog" aria-modal="true"><div class="janela larga"><div class="cabj"><h2>Usuários do painel</h2><button class="btn" data-acao="fechar-janela">Fechar</button></div><div id="uMsg">' + (S.msg ? '<div class="' + S.msg[0] + '" role="status">' + esc(S.msg[1]) + '</div>' : '') + '</div>' +
+        '<div style="overflow:auto"><table><thead><tr><th>Usuário</th><th>Perfil</th><th>Situação</th><th>Último acesso</th><th></th></tr></thead><tbody>' + linhas + '</tbody></table></div>' +
+        '<div class="cartao"><h2>Novo usuário</h2><form id="fUsuario"><div class="grade2"><label class="c">Usuário (e-mail ou nome sem espaços)<input type="text" id="uUsuario" autocomplete="off" autocapitalize="none"></label><label class="c">Nome<input type="text" id="uNome" autocomplete="off"></label></div>' +
+        '<div class="grade2"><label class="c">Perfil<select id="uPerfil"><option>RH</option><option>Administrador</option></select></label><label class="c">Senha provisória<input type="text" id="uSenha" autocomplete="off" spellcheck="false"></label></div>' +
+        '<div class="linha"><button class="btn" type="button" data-acao="gerar-senha">Gerar senha forte</button><button class="btn principal" type="submit" id="uCriar">Criar usuário</button></div>' +
+        '<div class="pequeno" style="margin-top:6px">Passe a senha provisória por um canal seguro. A pessoa será obrigada a trocá-la no primeiro acesso.</div></form>' +
+        (S.gerada ? '<div class="ok" style="margin-top:10px">Senha provisória: <span class="senhaGerada">' + esc(S.gerada) + '</span><div class="pequeno">Ela só aparece agora. Anote e entregue à pessoa.</div></div>' : '') + '</div></div></div>';
+    }
+    return '';
+  }
+
+  var anterior = '';
+  function render() {
+    var h;
+    if (S.tela === 'login') { h = viewLogin(); } else if (S.tela === 'trocar') { h = viewTrocar(); } else { h = viewPainel(); }
+    app.innerHTML = h;
+    if (S.tela === 'painel' && !S.itens.length && !S.carregou) { /* carregando */ }
+  }
+
+  // ---------- ações ----------
+  function carregar() {
+    return chamar('rh_carregar', {}).then(function (r) {
+      if (!r || !r.ok) { S.msg = ['erro', textoErro(r)]; render(); return; }
+      S.itens = r.dados.itens; S.empresas = r.dados.empresas; S.nome = r.dados.nome || S.nome; S.perfil = r.dados.perfil || S.perfil; S.usuario = r.dados.usuario || S.usuario; S.carregou = true;
+      render();
+    }).catch(function () { S.msg = ['erro', 'Sem conexão. Tente de novo.']; render(); });
+  }
+  function abrirFicha(token, manterMsg) {
+    S.sel = token; S.det = null; S.carregandoDet = false; S.confirmarCancelar = false; if (!manterMsg) { S.msg = null; }
+    var i = S.itens.filter(function (x) { return x.token === token; })[0];
+    atualizarLateral();
+    if (!i || !(i.situacao === 'Recebido' || i.situacao === 'Conferido' || i.arquivos > 0)) { return; }
+    S.carregandoDet = true; atualizarLateral();
+    chamar('rh_detalhe', { token: token }).then(function (r) {
+      if (S.sel !== token) { return; }
+      S.carregandoDet = false;
+      if (r && r.ok) { S.det = r.dados; } else { S.msg = ['erro', textoErro(r)]; }
+      atualizarLateral(); atualizarMsg();
+    }).catch(function () { S.carregandoDet = false; S.msg = ['erro', 'Sem conexão. Tente de novo.']; atualizarLateral(); atualizarMsg(); });
+  }
+  function atualizarLateral() {
+    var c = document.getElementById('chips'), l = document.getElementById('lista'), d = document.getElementById('detalhe');
+    if (c) { c.innerHTML = htmlChips(); } if (l) { l.innerHTML = htmlLista(); } if (d) { d.innerHTML = htmlDetalhe(); }
+  }
+  function atualizarMsg() { var m = document.getElementById('mensagem'); if (m) { m.innerHTML = S.msg ? '<div class="' + S.msg[0] + '" role="status">' + esc(S.msg[1]) + '</div>' : ''; } }
+
+  function fecharViewer() {
+    if (S.viewer && S.viewer.url) { try { URL.revokeObjectURL(S.viewer.url); } catch (e) { /* ok */ } }
+    S.viewer = null;
+  }
+  function abrirDocumento(chave, nome) {
+    fecharViewer(); S.viewer = { nome: nome, carregando: true }; render();
+    chamar('rh_arquivo', { token: S.sel, chave: chave }).then(function (r) {
+      if (!S.viewer) { return; }
+      if (!r || !r.ok) { S.viewer = { nome: nome, erro: textoErro(r) }; render(); return; }
+      var bin = atob(r.dados), bytes = new Uint8Array(bin.length);
+      for (var i = 0; i < bin.length; i++) { bytes[i] = bin.charCodeAt(i); }
+      S.viewer = { nome: r.nome, mime: r.mime, url: URL.createObjectURL(new Blob([bytes], { type: r.mime })) };
+      render();
+    }).catch(function () { S.viewer = { nome: nome, erro: 'Sem conexão. Tente de novo.' }; render(); });
+  }
+
+  function aposLogin(r) {
+    S.sessao = r.sessao; S.nome = r.nome; S.perfil = r.perfil; S.aviso = ''; reiniciarIdle();
+    if (r.trocar) { S.tela = 'trocar'; render(); } else { S.tela = 'painel'; render(); carregar(); }
+  }
+
+  app.addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var f = ev.target.id;
+    if (f === 'fLogin') {
+      var u = document.getElementById('lUsuario').value, s = document.getElementById('lSenha').value, b = document.getElementById('lEntrar'), er = document.getElementById('lErro');
+      b.disabled = true; b.textContent = 'Entrando…'; er.innerHTML = '';
+      S.usuario = String(u).trim().toLowerCase();
+      derivar(u, s).then(function (chave) { return chamar('rh_login', { usuario: u, chave: chave }); }).then(function (r) {
+        if (r && r.ok) { document.getElementById('lSenha').value = ''; aposLogin(r); return; }
+        er.innerHTML = '<div class="erro" role="alert">' + esc(textoErro(r)) + '</div>'; b.disabled = false; b.textContent = 'Entrar'; document.getElementById('lSenha').value = '';
+      }).catch(function () { er.innerHTML = '<div class="erro" role="alert">Sem conexão, ou este navegador não consegue proteger a senha. Tente de novo.</div>'; b.disabled = false; b.textContent = 'Entrar'; });
+    } else if (f === 'fTrocar' || f === 'fSenha') {
+      var pre = f === 'fTrocar' ? 't' : 's', at = document.getElementById(pre + 'Atual').value, n1 = document.getElementById(pre + 'Nova').value, n2 = document.getElementById(pre + 'Nova2').value;
+      var errEl = document.getElementById(pre + 'Erro'), btn = document.getElementById(pre + 'Salvar');
+      var fr = senhaFraca(n1, S.usuario);
+      if (fr.length) { errEl.innerHTML = '<div class="erro" role="alert">A nova senha precisa de: ' + esc(fr.join(', ')) + '.</div>'; return; }
+      if (n1 !== n2) { errEl.innerHTML = '<div class="erro" role="alert">As duas senhas novas não são iguais.</div>'; return; }
+      btn.disabled = true; btn.textContent = 'Salvando…'; errEl.innerHTML = '';
+      Promise.all([derivar(S.usuario, at), derivar(S.usuario, n1)]).then(function (k) { return chamar('rh_trocar_senha', { chaveAtual: k[0], chaveNova: k[1] }); }).then(function (r) {
+        if (r && r.ok) {
+          if (f === 'fTrocar') { S.tela = 'painel'; S.msg = ['ok', 'Senha criada.']; render(); carregar(); } else { S.janela = null; S.msg = ['ok', 'Senha alterada.']; render(); }
+          return;
+        }
+        errEl.innerHTML = '<div class="erro" role="alert">' + esc(r && r.erro === 'credenciais' ? 'A senha atual está errada.' : textoErro(r)) + '</div>'; btn.disabled = false; btn.textContent = 'Salvar nova senha';
+      }).catch(function () { errEl.innerHTML = '<div class="erro" role="alert">Sem conexão. Tente de novo.</div>'; btn.disabled = false; btn.textContent = 'Salvar nova senha'; });
+    } else if (f === 'fUsuario') {
+      var usu = document.getElementById('uUsuario').value, nome = document.getElementById('uNome').value, perfil = document.getElementById('uPerfil').value, sen = document.getElementById('uSenha').value;
+      var ms = document.getElementById('uMsg'), fr2 = senhaFraca(sen, usu);
+      if (!usu.trim() || nome.trim().length < 2) { ms.innerHTML = '<div class="erro" role="alert">Preencha o usuário e o nome.</div>'; return; }
+      if (fr2.length) { ms.innerHTML = '<div class="erro" role="alert">A senha provisória precisa de: ' + esc(fr2.join(', ')) + '.</div>'; return; }
+      var bc = document.getElementById('uCriar'); bc.disabled = true;
+      derivar(usu, sen).then(function (k) { return chamar('rh_usuario_criar', { usuario: usu, nome: nome, perfil: perfil, chaveInicial: k }); }).then(function (r) {
+        if (r && r.ok) { S.gerada = sen; S.msg = ['ok', 'Usuário criado.']; return listarUsuarios(); }
+        ms.innerHTML = '<div class="erro" role="alert">' + esc(textoErro(r)) + '</div>'; bc.disabled = false;
+      }).catch(function () { ms.innerHTML = '<div class="erro" role="alert">Sem conexão. Tente de novo.</div>'; bc.disabled = false; });
+    }
+  });
+
+  function listarUsuarios() {
+    return chamar('rh_usuarios', {}).then(function (r) { if (r && r.ok) { S.usuarios = r.dados; } S.janela = 'usuarios'; render(); });
+  }
+
+  app.addEventListener('input', function (ev) {
+    var t = ev.target;
+    if (t.id === 'busca') { S.busca = t.value; atualizarLateral(); }
+  });
+  app.addEventListener('change', function (ev) {
+    if (ev.target.id === 'filtroEmpresa') { S.emp = ev.target.value; atualizarLateral(); }
+  });
+  app.addEventListener('click', function (ev) {
+    var b = ev.target.closest('button, a'); if (!b) { return; }
+    var acao = b.getAttribute('data-acao');
+    if (b.getAttribute('data-sit') !== null) { S.sit = b.getAttribute('data-sit'); atualizarLateral(); return; }
+    if (b.getAttribute('data-token')) { abrirFicha(b.getAttribute('data-token')); return; }
+    if (b.getAttribute('data-doc')) { abrirDocumento(b.getAttribute('data-doc'), b.getAttribute('data-nome')); return; }
+    if (b.getAttribute('data-mudar')) {
+      var nova = b.getAttribute('data-mudar'), tk = S.sel; b.disabled = true;
+      chamar('rh_situacao', { token: tk, nova: nova }).then(function (r) {
+        if (r && r.ok) { S.confirmarCancelar = false; S.msg = ['ok', nova === 'Conferido' ? 'Marcado como conferido.' : nova === 'Cancelado' ? 'Convite cancelado.' : 'Situação atualizada.']; return carregar().then(function () { abrirFichaSemRecarregar(tk); }); }
+        b.disabled = false; S.msg = ['erro', textoErro(r)]; atualizarMsg();
+      });
+      return;
+    }
+    if (b.getAttribute('data-redef')) {
+      var alvo = b.getAttribute('data-redef'), nv = gerarSenha();
+      derivar(alvo, nv).then(function (k) { return chamar('rh_usuario_senha', { usuario: alvo, chaveNova: k }); }).then(function (r) {
+        if (r && r.ok) { S.gerada = nv; S.msg = ['ok', 'Senha de ' + alvo + ' redefinida. A pessoa precisa trocá-la no próximo acesso.']; return listarUsuarios(); }
+        S.msg = ['erro', textoErro(r)]; render();
+      });
+      return;
+    }
+    if (b.getAttribute('data-alt')) {
+      var al = b.getAttribute('data-alt'), ns = b.getAttribute('data-sit-novo');
+      chamar('rh_usuario_situacao', { usuario: al, situacao: ns }).then(function (r) {
+        S.gerada = ''; S.msg = r && r.ok ? ['ok', ns === 'Ativo' ? 'Usuário reativado.' : 'Usuário desativado.'] : ['erro', textoErro(r)]; return listarUsuarios();
+      });
+      return;
+    }
+    switch (acao) {
+      case 'sair': sair('Você saiu.'); break;
+      case 'atualizar': { var t = S.sel; carregar().then(function () { if (t) { abrirFichaSemRecarregar(t); } }); break; }
+      case 'cancelar': S.confirmarCancelar = true; atualizarLateral(); break;
+      case 'nao-cancelar': S.confirmarCancelar = false; atualizarLateral(); break;
+      case 'minha-senha': S.janela = 'senha'; S.msg = null; render(); break;
+      case 'usuarios': S.gerada = ''; S.msg = null; listarUsuarios(); break;
+      case 'fechar-janela': S.janela = null; S.gerada = ''; S.msg = null; render(); break;
+      case 'fechar-doc': fecharViewer(); render(); break;
+      case 'gerar-senha': document.getElementById('uSenha').value = gerarSenha(); break;
+      case 'copiar': {
+        var link = S.convite && S.convite.link;
+        if (link && navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(link).then(function () { b.textContent = 'Copiado'; }); }
+        break;
+      }
+      case 'gerar': {
+        var nome = document.getElementById('cNome').value.trim(), empresa = document.getElementById('cEmpresa').value;
+        if (nome.length < 2) { S.msg = ['erro', 'Digite o nome do colaborador.']; atualizarMsg(); break; }
+        if (!empresa) { S.msg = ['erro', 'Escolha a empresa contratante.']; atualizarMsg(); break; }
+        S.msg = null; atualizarMsg(); b.disabled = true; b.textContent = 'Gerando…';
+        chamar('rh_convite', { dados: { nome: nome, empresa: empresa, contato: document.getElementById('cContato').value, dias: document.getElementById('cDias').value } }).then(function (r) {
+          if (r && r.ok) { S.convite = r.dados; S.sit = ''; return carregar(); }
+          S.msg = ['erro', textoErro(r)]; render();
+        });
+        break;
+      }
+    }
+  });
+  function abrirFichaSemRecarregar(token) { abrirFicha(token, true); atualizarMsg(); }
+
+  render();
+})();
+</script>
+</body>
+</html>
