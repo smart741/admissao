@@ -228,7 +228,7 @@
     var b = norm(S.busca);
     return S.itens.filter(function (i) {
       if (S.emp && i.empresa !== S.emp) { return false; }
-      if (b && norm(i.nome + ' ' + i.empresa).indexOf(b) < 0) { return false; }
+      if (b && norm(i.nome + ' ' + i.empresa + ' ' + (i.funcao || '')).indexOf(b) < 0) { return false; }
       if (!ignorarSit && S.sit && i.situacao !== S.sit) { return false; }
       return true;
     });
@@ -245,14 +245,14 @@
     if (!l.length) { return '<div class="vazio">Nenhum colaborador nesta seleção.</div>'; }
     return l.map(function (i) {
       var q = i.situacao === 'Recebido' || i.situacao === 'Conferido' ? 'recebido ' + data(i.enviado) : i.situacao === 'Em preenchimento' ? i.arquivos + ' arquivos enviados' : 'vale até ' + data(i.validade);
-      return '<button class="item" data-token="' + esc(i.token) + '" aria-current="' + (i.token === S.sel) + '"><span class="corpo"><span class="n">' + esc(i.nome) + '</span><span class="d">' + esc(i.empresa) + ' · ' + esc(q) + '</span></span><span class="sel ' + classeSit(i.situacao) + '">' + esc(i.situacao) + '</span></button>';
+      return '<button class="item" data-token="' + esc(i.token) + '" aria-current="' + (i.token === S.sel) + '"><span class="corpo"><span class="n">' + esc(i.nome) + '</span><span class="d">' + esc(i.empresa) + (i.funcao ? ' · ' + esc(i.funcao) : '') + ' · ' + esc(q) + '</span></span><span class="sel ' + classeSit(i.situacao) + '">' + esc(i.situacao) + '</span></button>';
     }).join('');
   }
   function campo(r, v) { return '<div><div class="r">' + esc(r) + '</div><div class="v">' + esc(v || '—') + '</div></div>'; }
   function htmlDetalhe() {
     var i = S.itens.filter(function (x) { return x.token === S.sel; })[0];
     if (!i) { return '<div class="vazio">Escolha um colaborador na lista.</div>'; }
-    var h = '<div class="detalhe"><div class="cab"><div class="tt"><h2>' + esc(i.nome) + '</h2><div class="pequeno">' + esc(i.empresa) + ' · <span class="sel ' + classeSit(i.situacao) + '">' + esc(i.situacao) + '</span>' + (i.enviado ? ' · recebido ' + esc(data(i.enviado)) : '') + '</div></div>';
+    var h = '<div class="detalhe"><div class="cab"><div class="tt"><h2>' + esc(i.nome) + '</h2><div class="pequeno">' + esc(i.empresa) + (i.funcao ? ' · ' + esc(i.funcao) : '') + ' · <span class="sel ' + classeSit(i.situacao) + '">' + esc(i.situacao) + '</span>' + (i.enviado ? ' · recebido ' + esc(data(i.enviado)) : '') + '</div></div>';
     if (i.situacao === 'Recebido' || i.situacao === 'Conferido') {
       h += S.pdf ? '<button class="btn" disabled>' + esc(S.pdf) + '</button>' : '<button class="btn" data-acao="baixar-pdf">Baixar ficha em PDF</button>';
     }
@@ -290,6 +290,7 @@
   function viewPainel() {
     var empresas = S.empresas.map(function (e) { return '<option value="' + esc(e) + '"' + (S.emp === e ? ' selected' : '') + '>' + esc(e) + '</option>'; }).join('');
     var opcoes = S.empresas.map(function (e) { return '<option value="' + esc(e) + '">' + esc(e) + '</option>'; }).join('');
+    var opcoesFuncao = (S.funcoes || []).map(function (e) { return '<option value="' + esc(e) + '">' + esc(e) + '</option>'; }).join('');
     return '<div class="topo"><div class="logo">GC</div><div><div class="t">Admissões Grupo Cores do Rio</div></div><div class="espaco"></div>' +
       '<span class="pequeno">' + esc(S.nome) + ' · ' + esc(S.perfil) + '</span>' +
       (S.perfil === 'Administrador' ? '<button class="btn" data-acao="usuarios">Usuários</button>' : '') +
@@ -300,6 +301,7 @@
       '<div class="colunas"><div class="esq"><div class="cartao"><h2>Novo convite</h2>' +
       '<label class="c">Nome do colaborador<input type="text" id="cNome" autocomplete="off"></label>' +
       '<label class="c">Empresa contratante (obrigatório)<select id="cEmpresa"><option value="" selected disabled>Selecione a empresa</option>' + opcoes + '</select></label>' +
+      '<label class="c">Função do colaborador (obrigatório)<select id="cFuncao"><option value="" selected disabled>Selecione a função</option>' + opcoesFuncao + '</select></label>' +
       '<label class="c">CPF do colaborador (obrigatório)<input type="text" id="cCpf" inputmode="numeric" autocomplete="off" placeholder="000.000.000-00"></label>' +
       '<div class="grade2"><label class="c">WhatsApp<input type="text" id="cWhats" inputmode="tel" autocomplete="off" placeholder="(21) 90000-0000"></label><label class="c">E-mail<input type="text" id="cEmail" inputmode="email" autocomplete="off" autocapitalize="none" placeholder="nome@email.com"></label></div>' +
       '<label class="c" style="flex-direction:row;align-items:center;gap:8px;font-weight:500"><input type="checkbox" id="cEnviar" checked style="width:20px;height:20px"> Enviar o link por e-mail agora</label>' +
@@ -357,7 +359,7 @@
   function carregar() {
     return chamar('rh_carregar', {}).then(function (r) {
       if (!r || !r.ok) { S.msg = ['erro', textoErro(r)]; render(); return; }
-      S.itens = r.dados.itens; S.empresas = r.dados.empresas; S.nome = r.dados.nome || S.nome; S.perfil = r.dados.perfil || S.perfil; S.usuario = r.dados.usuario || S.usuario; S.carregou = true;
+      S.itens = r.dados.itens; S.empresas = r.dados.empresas; S.funcoes = r.dados.funcoes || []; S.nome = r.dados.nome || S.nome; S.perfil = r.dados.perfil || S.perfil; S.usuario = r.dados.usuario || S.usuario; S.carregou = true;
       render();
     }).catch(function () { S.msg = ['erro', 'Sem conexão. Tente de novo.']; render(); });
   }
@@ -491,12 +493,14 @@
     page.drawText('Ficha de admissão', { x: M, y: A - 56, size: 11.5, font: fonte, color: BRANCO });
     y = A - 72 - 26;
     escrever(item.nome, { neg: true, tam: 18 });
-    escrever(item.empresa + '  -  ' + item.situacao + (item.enviado ? '  -  recebido em ' + data(item.enviado) : ''), { tam: 11, cor: CINZA });
+    escrever(item.empresa + (item.funcao ? '  -  ' + item.funcao : '') + '  -  ' + item.situacao + (item.enviado ? '  -  recebido em ' + data(item.enviado) : ''), { tam: 11, cor: CINZA });
     y -= 4;
     if (d['Documentos que faltam']) { secao('Pendências'); escrever('Falta: ' + d['Documentos que faltam']); }
     GRUPOS.forEach(function (g) {
       if (!g[1].some(function (r) { return d[r]; })) { return; }
-      secao(g[0]); g[1].forEach(function (r) { campo(r, r === 'Data de nascimento' ? dataBR(d[r]) : d[r]); });
+      secao(g[0]);
+      if (g[0] === 'Identificação' && (item.funcao || d['Função'])) { campo('Função', item.funcao || d['Função']); }
+      g[1].forEach(function (r) { campo(r, r === 'Data de nascimento' ? dataBR(d[r]) : d[r]); });
     });
     if (d['Filhos']) { secao('Filhos'); escrever(dataBR(d['Filhos'])); }
     if (d['Expectativas com a empresa']) { secao('Expectativas com a empresa'); escrever(d['Expectativas com a empresa']); }
@@ -706,12 +710,14 @@
         var nome = document.getElementById('cNome').value.trim(), empresa = document.getElementById('cEmpresa').value;
         if (nome.length < 2) { S.msg = ['erro', 'Digite o nome do colaborador.']; atualizarMsg(); break; }
         if (!empresa) { S.msg = ['erro', 'Escolha a empresa contratante.']; atualizarMsg(); break; }
+        var funcao = document.getElementById('cFuncao').value;
+        if (!funcao) { S.msg = ['erro', 'Escolha a função do colaborador.']; atualizarMsg(); break; }
         if (!cpfValido(document.getElementById('cCpf').value)) { S.msg = ['erro', 'Digite um CPF válido do colaborador.']; atualizarMsg(); break; }
         var wz = document.getElementById('cWhats').value.trim(), em = document.getElementById('cEmail').value.trim();
         if (wz && !telefoneValido(wz)) { S.msg = ['erro', 'Confira o WhatsApp do colaborador (com DDD).']; atualizarMsg(); break; }
         if (em && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(em)) { S.msg = ['erro', 'Confira o e-mail do colaborador.']; atualizarMsg(); break; }
         S.msg = null; atualizarMsg(); b.disabled = true; b.textContent = 'Gerando…';
-        chamar('rh_convite', { dados: { nome: nome, empresa: empresa, cpf: document.getElementById('cCpf').value, whatsapp: wz, email: em, enviarEmail: document.getElementById('cEnviar').checked, dias: document.getElementById('cDias').value } }).then(function (r) {
+        chamar('rh_convite', { dados: { nome: nome, empresa: empresa, funcao: funcao, cpf: document.getElementById('cCpf').value, whatsapp: wz, email: em, enviarEmail: document.getElementById('cEnviar').checked, dias: document.getElementById('cDias').value } }).then(function (r) {
           if (r && r.ok) { S.convite = r.dados; S.sit = ''; return carregar(); }
           S.msg = ['erro', textoErro(r)]; render();
         });
