@@ -275,7 +275,7 @@
       if (d['Filhos']) { h += '<div class="sec"><h3>Filhos</h3><div class="texto">' + esc(dataBR(d['Filhos'])) + '</div></div>'; }
       if (d['Expectativas com a empresa']) { h += '<div class="sec"><h3>Expectativas com a empresa</h3><div class="texto">' + esc(d['Expectativas com a empresa']) + '</div></div>'; }
       if (d['Aceite de privacidade'] || d['Local no mapa']) {
-        h += '<div class="sec"><h3>Confirmação</h3><div class="dados"><div><div class="r">Localização</div><div class="v">' + (d['Local no mapa'] ? '<a href="' + esc(d['Local no mapa']) + '" target="_blank" rel="noopener noreferrer">Ver no mapa</a>' + (d['Precisão (m)'] ? ' (precisão ' + esc(d['Precisão (m)']) + ' m)' : '') : '—') + '</div></div>' +
+        h += '<div class="sec"><h3>Confirmação</h3><div class="dados">' + (d['Endereço da assinatura'] ? campo('Local da assinatura', d['Endereço da assinatura']) : '') + '<div><div class="r">Localização</div><div class="v">' + (d['Local no mapa'] ? '<a href="' + esc(d['Local no mapa']) + '" target="_blank" rel="noopener noreferrer">Ver no mapa</a>' + (d['Precisão (m)'] ? ' (precisão ' + esc(d['Precisão (m)']) + ' m)' : '') : '—') + '</div></div>' +
           campo('Aceite de privacidade', d['Aceite de privacidade']) + campo('Declaração de veracidade', d['Declaração de veracidade']) + '</div></div>';
       }
       if (S.det.arquivos && S.det.arquivos.length) {
@@ -501,7 +501,9 @@
     if (d['Filhos']) { secao('Filhos'); escrever(dataBR(d['Filhos'])); }
     if (d['Expectativas com a empresa']) { secao('Expectativas com a empresa'); escrever(d['Expectativas com a empresa']); }
     secao('Confirmação');
-    campo('Localização', d['Latitude'] ? d['Latitude'] + ', ' + d['Longitude'] + (d['Precisão (m)'] ? '  (precisão ' + d['Precisão (m)'] + ' m)' : '') : '');
+    var coordenadas = d['Latitude'] ? 'Latitude ' + d['Latitude'] + ', longitude ' + d['Longitude'] : '';
+    var enderecoAss = d['Endereço da assinatura'] || '';
+    campo('Localização', (enderecoAss || coordenadas) + (d['Precisão (m)'] && (enderecoAss || coordenadas) ? '  (aproximado, precisão de cerca de ' + d['Precisão (m)'] + ' m)' : ''));
     campo('Mapa', d['Local no mapa'] || '');
     campo('Aceite de privacidade', d['Aceite de privacidade']);
     campo('Declaração de veracidade', d['Declaração de veracidade']);
@@ -544,17 +546,16 @@
             y -= h + 26;
             var dec = /assinado na tela em (\d{2}\/\d{2}\/\d{4} \d{2}:\d{2})(?: \(termo ([^)]*)\))?/.exec(d['Declaração de veracidade'] || '');
             var quando = dec ? dec[1] : (d['Enviado em'] ? data(d['Enviado em']) : (item.enviado ? data(item.enviado) : ''));
-            var local = d['Latitude'] ? 'Latitude ' + d['Latitude'] + ', longitude ' + d['Longitude'] + (d['Precisão (m)'] ? ' (precisão de cerca de ' + d['Precisão (m)'] + ' m)' : '') : 'Não informado';
+            var local = enderecoAss || (coordenadas ? coordenadas + (d['Precisão (m)'] ? ' (precisão de cerca de ' + d['Precisão (m)'] + ' m)' : '') : 'Não informado');
             page.drawText(paraPdf('Assinado por'), { x: M, y: y - 12, size: 12, font: neg, color: PRETO });
             y -= 24;
             campo('Nome', item.nome);
             campo('CPF', d['CPF']);
             campo('Local da assinatura', local);
-            if (d['Local no mapa']) { campo('Mapa', d['Local no mapa']); }
             campo('Data e hora', quando);
             if (dec && dec[2]) { campo('Versão do termo', dec[2]); }
             y -= 6;
-            escrever('Assinatura eletrônica simples, desenhada na tela do celular. O local é a localização informada pelo aparelho do colaborador, e a data e a hora foram registradas pelo sistema no envio do formulário.', { tam: 8.5, cor: CINZA });
+            escrever('Assinatura eletrônica simples, desenhada na tela do celular. ' + (enderecoAss ? 'O local é um endereço aproximado, obtido a partir da localização informada pelo aparelho do colaborador' : 'O local é a localização informada pelo aparelho do colaborador') + ', e a data e a hora foram registradas pelo sistema no envio do formulário.', { tam: 8.5, cor: CINZA });
           }
         }
       } catch (e) { avisos.push(titulo + ': formato não suportado no PDF (abra pelo botão "Abrir").'); }
