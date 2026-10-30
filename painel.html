@@ -252,6 +252,9 @@
     var i = S.itens.filter(function (x) { return x.token === S.sel; })[0];
     if (!i) { return '<div class="vazio">Escolha um colaborador na lista.</div>'; }
     var h = '<div class="detalhe"><div class="cab"><div class="tt"><h2>' + esc(i.nome) + '</h2><div class="pequeno">' + esc(i.empresa) + ' · <span class="sel ' + classeSit(i.situacao) + '">' + esc(i.situacao) + '</span>' + (i.enviado ? ' · recebido ' + esc(data(i.enviado)) : '') + '</div></div>';
+    if (i.situacao === 'Recebido' || i.situacao === 'Conferido') {
+      h += S.pdf ? '<button class="btn" disabled>' + esc(S.pdf) + '</button>' : '<button class="btn" data-acao="baixar-pdf">Baixar ficha em PDF</button>';
+    }
     if (i.situacao === 'Recebido') { h += '<button class="btn principal" data-mudar="Conferido">Marcar como conferido</button>'; }
     if (i.situacao === 'Conferido') { h += '<button class="btn" data-mudar="Recebido">Desfazer conferência</button>'; }
     if ((i.situacao === 'Aguardando' || i.situacao === 'Em preenchimento') && /[^\s@·]+@[^\s@·]+\.[^\s@·]{2,}/.test(i.contato || '')) { h += '<button class="btn" data-acao="reenviar-email">Reenviar e-mail</button>'; }
@@ -392,6 +395,186 @@
     }).catch(function () { S.viewer = { nome: nome, erro: 'Sem conexão. Tente de novo.' }; render(); });
   }
 
+  // ---------- ficha em PDF (dados escritos + fotos dos documentos) ----------
+  var PDFLIB_SRC = 'pdf-lib.min.js';            // arquivo que fica ao lado do painel.html no GitHub
+  var PDFLIB_SRI = 'sha384-weMABwrltA6jWR8DDe9Jp5blk+tZQh7ugpCsF3JwSA53WZM9/14PjS5LAJNHNjAI';
+  function carregarPdfLib() {
+    return new Promise(function (ok, falha) {
+      if (window.PDFLib) { ok(window.PDFLib); return; }
+      var s = document.createElement('script');
+      s.src = PDFLIB_SRC; s.integrity = PDFLIB_SRI;     // o navegador recusa o arquivo se ele for alterado
+      s.onload = function () { if (window.PDFLib) { ok(window.PDFLib); } else { falha(new Error('pdflib')); } };
+      s.onerror = function () { falha(new Error('pdflib')); };
+      document.head.appendChild(s);
+    });
+  }
+  var ORDEM_DOCS = ['selfie', 'cpf', 'rg_frente', 'rg_verso', 'titulo', 'reservista', 'escolaridade', 'certidao_casamento', 'jae', 'comprovante_residencia'];
+  function ordemDoc(chave) {
+    if (chave === 'assinatura') { return 9999; }
+    var i = ORDEM_DOCS.indexOf(chave);
+    if (i >= 0) { return i; }
+    var m = /^filho(\d+)_/.exec(chave);
+    return 100 + (m ? parseInt(m[1], 10) : 50);
+  }
+  // a fonte padrão do PDF só tem letras latinas: troca aspas e travessões "bonitos" e o que não existir vira "?"
+  function paraPdf(t) {
+    return String(t == null ? '' : t).replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"').replace(/[\u2013\u2014]/g, '-')
+      .replace(/\u2026/g, '...').replace(/\u2022/g, '-').replace(/[\t\r]+/g, ' ').replace(/[^\n\x20-\x7E\u00A0-\u00FF]/g, '?');
+  }
+  function base64ParaBytes(b64) { var bin = atob(b64), u = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) { u[i] = bin.charCodeAt(i); } return u; }
+  function imagemParaJpeg(bytes, mime) {     // para tipos que o PDF não aceita direto (ex.: webp)
+    return createImageBitmap(new Blob([bytes], { type: mime })).then(function (bmp) {
+      var c = document.createElement('canvas'); c.width = bmp.width; c.height = bmp.height;
+      var cx = c.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, c.width, c.height); cx.drawImage(bmp, 0, 0);
+      return new Promise(function (ok, falha) { c.toBlob(function (b) { if (!b) { falha(new Error('img')); return; } b.arrayBuffer().then(function (ab) { ok(new Uint8Array(ab)); }); }, 'image/jpeg', 0.9); });
+    });
+  }
+  function agoraTexto() { var d = new Date(), p = function (n) { return ('0' + n).slice(-2); }; return p(d.getDate()) + '/' + p(d.getMonth() + 1) + '/' + d.getFullYear() + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()); }
+  function nomeFichaPdf(i) {
+    var d = new Date(), p = function (n) { return ('0' + n).slice(-2); };
+    return ('Ficha de admissão - ' + i.nome + ' - ' + i.empresa + ' - ' + d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + '.pdf').replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, ' ');
+  }
+
+  async function gerarFichaPdf(item, det, progresso) {
+    var P = await carregarPdfLib();
+    var pdf = await P.PDFDocument.create();
+    var fonte = await pdf.embedFont(P.StandardFonts.Helvetica), neg = await pdf.embedFont(P.StandardFonts.HelveticaBold);
+    var L = 595.28, A = 841.89, M = 48, BRANCO = P.rgb(1, 1, 1), VERM = P.rgb(0.89, 0.024, 0.075), CINZA = P.rgb(0.33, 0.38, 0.48), PRETO = P.rgb(0.06, 0.1, 0.18);
+    var page, y, d = det.dados || {};
+    function nova() { page = pdf.addPage([L, A]); y = A - M; }
+    function quebrar(t, f, tam, larg) {
+      var saida = [];
+      String(t).split('\n').forEach(function (par) {
+        var linha = '';
+        par.split(' ').forEach(function (pal) {
+          var teste = linha ? linha + ' ' + pal : pal;
+          if (f.widthOfTextAtSize(teste, tam) <= larg) { linha = teste; return; }
+          if (linha) { saida.push(linha); }
+          while (f.widthOfTextAtSize(pal, tam) > larg && pal.length > 1) {
+            var k = pal.length; while (k > 1 && f.widthOfTextAtSize(pal.slice(0, k), tam) > larg) { k--; }
+            saida.push(pal.slice(0, k)); pal = pal.slice(k);
+          }
+          linha = pal;
+        });
+        saida.push(linha);
+      });
+      return saida;
+    }
+    function escrever(t, o) {
+      o = o || {};
+      var f = o.neg ? neg : fonte, tam = o.tam || 10.5, esp = tam * 1.35;
+      quebrar(paraPdf(t), f, tam, L - 2 * M).forEach(function (ln) {
+        if (y - esp < M + 24) { nova(); }
+        page.drawText(ln, { x: M, y: y - tam, size: tam, font: f, color: o.cor || PRETO }); y -= esp;
+      });
+    }
+    function campo(rot, val) {
+      var tam = 10.5, esp = tam * 1.35, linhas = quebrar(paraPdf(val || '-'), fonte, tam, L - 2 * M - 150);
+      if (y - linhas.length * esp < M + 24) { nova(); }
+      page.drawText(paraPdf(rot), { x: M, y: y - 9.5, size: 9, font: neg, color: CINZA });
+      linhas.forEach(function (ln) { page.drawText(ln, { x: M + 150, y: y - tam, size: tam, font: fonte, color: PRETO }); y -= esp; });
+      y -= 2;
+    }
+    function secao(t) {
+      if (y - 70 < M + 24) { nova(); }
+      y -= 10;
+      page.drawRectangle({ x: M, y: y - 19, width: L - 2 * M, height: 19, color: P.rgb(0.99, 0.93, 0.93) });
+      page.drawText(paraPdf(t), { x: M + 7, y: y - 13.5, size: 11, font: neg, color: P.rgb(0.54, 0.04, 0.07) });
+      y -= 28;
+    }
+
+    // ----- primeira página: dados escritos -----
+    nova();
+    page.drawRectangle({ x: 0, y: A - 72, width: L, height: 72, color: VERM });
+    page.drawText(paraPdf('Admissões Grupo Cores do Rio'), { x: M, y: A - 36, size: 19, font: neg, color: BRANCO });
+    page.drawText('Ficha de admissão', { x: M, y: A - 56, size: 11.5, font: fonte, color: BRANCO });
+    y = A - 72 - 26;
+    escrever(item.nome, { neg: true, tam: 18 });
+    escrever(item.empresa + '  -  ' + item.situacao + (item.enviado ? '  -  recebido em ' + data(item.enviado) : ''), { tam: 11, cor: CINZA });
+    y -= 4;
+    if (d['Documentos que faltam']) { secao('Pendências'); escrever('Falta: ' + d['Documentos que faltam']); }
+    GRUPOS.forEach(function (g) {
+      if (!g[1].some(function (r) { return d[r]; })) { return; }
+      secao(g[0]); g[1].forEach(function (r) { campo(r, d[r]); });
+    });
+    if (d['Filhos']) { secao('Filhos'); escrever(d['Filhos']); }
+    if (d['Expectativas com a empresa']) { secao('Expectativas com a empresa'); escrever(d['Expectativas com a empresa']); }
+    secao('Confirmação');
+    campo('Localização', d['Latitude'] ? d['Latitude'] + ', ' + d['Longitude'] + (d['Precisão (m)'] ? '  (precisão ' + d['Precisão (m)'] + ' m)' : '') : '');
+    campo('Mapa', d['Local no mapa'] || '');
+    campo('Aceite de privacidade', d['Aceite de privacidade']);
+    campo('Declaração de veracidade', d['Declaração de veracidade']);
+
+    // ----- documentos: uma página por foto; PDFs anexados entram com todas as páginas -----
+    var arqs = (det.arquivos || []).slice().sort(function (a, b) { return ordemDoc(a.chave) - ordemDoc(b.chave) || (a.nome < b.nome ? -1 : 1); });
+    var avisos = [];
+    for (var n = 0; n < arqs.length; n++) {
+      var a = arqs[n], titulo = a.nome.replace(/\.[a-z0-9]+$/i, '');
+      if (progresso) { progresso(n + 1, arqs.length); }
+      var r;
+      try { r = await chamar('rh_arquivo', { token: item.token, chave: a.chave }); } catch (e) { r = null; }
+      if (!r || !r.ok) { avisos.push(titulo + ': não foi possível incluir (abra pelo botão "Abrir").'); continue; }
+      var bytes = base64ParaBytes(r.dados);
+      try {
+        if (r.mime === 'application/pdf') {
+          var origem = await P.PDFDocument.load(bytes, { ignoreEncryption: true });
+          var copiadas = await pdf.copyPages(origem, origem.getPageIndices());
+          copiadas.forEach(function (p, k) {
+            pdf.addPage(p);
+            var tam = p.getSize();
+            p.drawRectangle({ x: 0, y: tam.height - 24, width: tam.width, height: 24, color: BRANCO, opacity: 0.9 });
+            p.drawText(paraPdf(titulo + ' (PDF anexado' + (copiadas.length > 1 ? ', página ' + (k + 1) + ' de ' + copiadas.length : '') + ')'), { x: 20, y: tam.height - 16, size: 9, font: neg, color: CINZA });
+          });
+        } else {
+          var img;
+          if (r.mime === 'image/png') { img = await pdf.embedPng(bytes); }
+          else if (r.mime === 'image/jpeg') { img = await pdf.embedJpg(bytes); }
+          else { img = await pdf.embedJpg(await imagemParaJpeg(bytes, r.mime)); }
+          nova();
+          page.drawText(paraPdf(titulo), { x: M, y: y - 14, size: 14, font: neg, color: PRETO });
+          y -= 28;
+          var maxL = L - 2 * M, maxA = y - M - 24, esc = Math.min(maxL / img.width, maxA / img.height, 2);
+          var w = img.width * esc, h = img.height * esc;
+          page.drawRectangle({ x: M + (maxL - w) / 2 - 1, y: y - h - 1, width: w + 2, height: h + 2, borderColor: P.rgb(0.85, 0.87, 0.92), borderWidth: 1 });
+          page.drawImage(img, { x: M + (maxL - w) / 2, y: y - h, width: w, height: h });
+        }
+      } catch (e) { avisos.push(titulo + ': formato não suportado no PDF (abra pelo botão "Abrir").'); }
+    }
+    if (avisos.length) { nova(); escrever('Observações', { neg: true, tam: 14 }); y -= 6; avisos.forEach(function (t) { escrever('- ' + t); }); }
+
+    // ----- rodapé em todas as páginas -----
+    var quem = S.nome || S.usuario || '', quando = agoraTexto(), todas = pdf.getPages();
+    todas.forEach(function (p, i) {
+      p.drawText(paraPdf('Confidencial - contém dados pessoais (LGPD) - gerado por ' + quem + ' em ' + quando + ' - página ' + (i + 1) + ' de ' + todas.length),
+        { x: 20, y: 10, size: 7, font: fonte, color: CINZA });
+    });
+    pdf.setTitle(paraPdf('Ficha de admissão - ' + item.nome)); pdf.setAuthor('Admissões Grupo Cores do Rio'); pdf.setCreator('Painel do RH');
+    return pdf.save();
+  }
+
+  function entregarArquivo(bytes, nome) {
+    var url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+    var a = document.createElement('a'); a.href = url; a.download = nome; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { try { URL.revokeObjectURL(url); } catch (e) { /* ok */ } }, 60000);
+  }
+
+  async function baixarPdf() {
+    var i = S.itens.filter(function (x) { return x.token === S.sel; })[0];
+    if (!i || S.pdf) { return; }
+    if (!S.det) { S.msg = ['erro', 'Espere a ficha terminar de carregar.']; atualizarMsg(); return; }
+    S.pdf = 'Preparando…'; S.msg = null; atualizarLateral(); atualizarMsg();
+    try {
+      var bytes = await gerarFichaPdf(i, S.det, function (n, t) { S.pdf = 'Incluindo documentos ' + n + ' de ' + t + '…'; atualizarLateral(); });
+      var nome = nomeFichaPdf(i);
+      entregarArquivo(bytes, nome);
+      chamar('rh_registrar_pdf', { token: i.token }).catch(function () { });
+      S.msg = ['ok', 'Ficha baixada: ' + nome];
+    } catch (e) {
+      S.msg = ['erro', e && e.message === 'pdflib' ? 'Não foi possível carregar o gerador de PDF. Confira se o arquivo pdf-lib.min.js foi enviado ao GitHub, na mesma pasta do painel.' : 'Não foi possível gerar o PDF. Tente de novo.'];
+    }
+    S.pdf = ''; atualizarLateral(); atualizarMsg();
+  }
+
   function aposLogin(r) {
     S.sessao = r.sessao; S.nome = r.nome; S.perfil = r.perfil; S.aviso = ''; guardarSessao(); reiniciarIdle();
     if (r.trocar) { S.tela = 'trocar'; render(); } else { S.tela = 'painel'; render(); carregar(); }
@@ -479,6 +662,7 @@
     switch (acao) {
       case 'sair': sair('Você saiu.'); break;
       case 'atualizar': { var t = S.sel; carregar().then(function () { if (t) { abrirFichaSemRecarregar(t); } }); break; }
+      case 'baixar-pdf': baixarPdf(); break;
       case 'cancelar': S.confirmarCancelar = true; atualizarLateral(); break;
       case 'reenviar-email': {
         b.disabled = true;
