@@ -107,6 +107,7 @@
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function norm(s) { return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
   function data(t) { var m = /^(\d{4})-(\d{2})-(\d{2})(?: (\d{2}:\d{2}))?/.exec(String(t || '')); return m ? m[3] + '/' + m[2] + '/' + m[1] + (m[4] ? ' ' + m[4] : '') : String(t || ''); }
+  function dataBR(t) { return String(t == null ? '' : t).replace(/\b(\d{4})-(\d{2})-(\d{2})\b/g, '$3/$2/$1'); }   // 1998-05-14 -> 14/05/1998
   function classeSit(s) { return 's-' + String(s).replace(/\s+/g, '-'); }
 
   // ---------- proteger a senha no navegador ----------
@@ -269,9 +270,9 @@
       var d = S.det.dados || {};
       GRUPOS.forEach(function (g) {
         if (!g[1].some(function (r) { return d[r]; })) { return; }
-        h += '<div class="sec"><h3>' + esc(g[0]) + '</h3><div class="dados">' + g[1].map(function (r) { return campo(r, d[r]); }).join('') + '</div></div>';
+        h += '<div class="sec"><h3>' + esc(g[0]) + '</h3><div class="dados">' + g[1].map(function (r) { return campo(r, r === 'Data de nascimento' ? dataBR(d[r]) : d[r]); }).join('') + '</div></div>';
       });
-      if (d['Filhos']) { h += '<div class="sec"><h3>Filhos</h3><div class="texto">' + esc(d['Filhos']) + '</div></div>'; }
+      if (d['Filhos']) { h += '<div class="sec"><h3>Filhos</h3><div class="texto">' + esc(dataBR(d['Filhos'])) + '</div></div>'; }
       if (d['Expectativas com a empresa']) { h += '<div class="sec"><h3>Expectativas com a empresa</h3><div class="texto">' + esc(d['Expectativas com a empresa']) + '</div></div>'; }
       if (d['Aceite de privacidade'] || d['Local no mapa']) {
         h += '<div class="sec"><h3>Confirmação</h3><div class="dados"><div><div class="r">Localização</div><div class="v">' + (d['Local no mapa'] ? '<a href="' + esc(d['Local no mapa']) + '" target="_blank" rel="noopener noreferrer">Ver no mapa</a>' + (d['Precisão (m)'] ? ' (precisão ' + esc(d['Precisão (m)']) + ' m)' : '') : '—') + '</div></div>' +
@@ -495,9 +496,9 @@
     if (d['Documentos que faltam']) { secao('Pendências'); escrever('Falta: ' + d['Documentos que faltam']); }
     GRUPOS.forEach(function (g) {
       if (!g[1].some(function (r) { return d[r]; })) { return; }
-      secao(g[0]); g[1].forEach(function (r) { campo(r, d[r]); });
+      secao(g[0]); g[1].forEach(function (r) { campo(r, r === 'Data de nascimento' ? dataBR(d[r]) : d[r]); });
     });
-    if (d['Filhos']) { secao('Filhos'); escrever(d['Filhos']); }
+    if (d['Filhos']) { secao('Filhos'); escrever(dataBR(d['Filhos'])); }
     if (d['Expectativas com a empresa']) { secao('Expectativas com a empresa'); escrever(d['Expectativas com a empresa']); }
     secao('Confirmação');
     campo('Localização', d['Latitude'] ? d['Latitude'] + ', ' + d['Longitude'] + (d['Precisão (m)'] ? '  (precisão ' + d['Precisão (m)'] + ' m)' : '') : '');
@@ -533,10 +534,28 @@
           nova();
           page.drawText(paraPdf(titulo), { x: M, y: y - 14, size: 14, font: neg, color: PRETO });
           y -= 28;
-          var maxL = L - 2 * M, maxA = y - M - 24, esc = Math.min(maxL / img.width, maxA / img.height, 2);
+          var ehAssinatura = a.chave === 'assinatura';
+          var maxL = L - 2 * M, maxA = y - M - 24 - (ehAssinatura ? 190 : 0), esc = Math.min(maxL / img.width, maxA / img.height, 2);
           var w = img.width * esc, h = img.height * esc;
           page.drawRectangle({ x: M + (maxL - w) / 2 - 1, y: y - h - 1, width: w + 2, height: h + 2, borderColor: P.rgb(0.85, 0.87, 0.92), borderWidth: 1 });
           page.drawImage(img, { x: M + (maxL - w) / 2, y: y - h, width: w, height: h });
+          if (ehAssinatura) {
+            // dados de quem assinou: nome, CPF, local e data/hora (o local vem da localização do celular, no momento do envio)
+            y -= h + 26;
+            var dec = /assinado na tela em (\d{2}\/\d{2}\/\d{4} \d{2}:\d{2})(?: \(termo ([^)]*)\))?/.exec(d['Declaração de veracidade'] || '');
+            var quando = dec ? dec[1] : (d['Enviado em'] ? data(d['Enviado em']) : (item.enviado ? data(item.enviado) : ''));
+            var local = d['Latitude'] ? 'Latitude ' + d['Latitude'] + ', longitude ' + d['Longitude'] + (d['Precisão (m)'] ? ' (precisão de cerca de ' + d['Precisão (m)'] + ' m)' : '') : 'Não informado';
+            page.drawText(paraPdf('Assinado por'), { x: M, y: y - 12, size: 12, font: neg, color: PRETO });
+            y -= 24;
+            campo('Nome', item.nome);
+            campo('CPF', d['CPF']);
+            campo('Local da assinatura', local);
+            if (d['Local no mapa']) { campo('Mapa', d['Local no mapa']); }
+            campo('Data e hora', quando);
+            if (dec && dec[2]) { campo('Versão do termo', dec[2]); }
+            y -= 6;
+            escrever('Assinatura eletrônica simples, desenhada na tela do celular. O local é a localização informada pelo aparelho do colaborador, e a data e a hora foram registradas pelo sistema no envio do formulário.', { tam: 8.5, cor: CINZA });
+          }
         }
       } catch (e) { avisos.push(titulo + ': formato não suportado no PDF (abra pelo botão "Abrir").'); }
     }
